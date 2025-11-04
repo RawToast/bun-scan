@@ -57,13 +57,13 @@ jobs:
           echo ""
 
           # Verify critical files are included
-          if ! npm pack --dry-run | grep -q "src/index.ts"; then
+          if ! npm pack --dry-run 2>&1 | grep -q "src/index.ts"; then
             echo "::error::Critical file src/index.ts missing from package"
             exit 1
           fi
 
           # Check package size
-          SIZE=$(npm pack --json --dry-run | jq '.[0].size')
+          SIZE=$(npm pack --json --dry-run 2>&1 | grep -o '\[.*\]' | jq '.[0].size')
           SIZE_MB=$((SIZE / 1048576))
           echo "Package size: $SIZE bytes ($SIZE_MB MB)"
 
@@ -77,11 +77,12 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - name: Publish to npm with provenance
         id: npm_publish
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Extract changelog for this version
         id: changelog
