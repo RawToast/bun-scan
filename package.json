@@ -1,6 +1,6 @@
 {
-	"name": "bun-osv-scanner",
-	"version": "2.0.0",
+	"name": "@bun-security-scanner/osv",
+	"version": "1.0.0",
 	"description": "OSV vulnerability scanner for Bun projects",
 	"author": "maloma7",
 	"license": "MIT",
@@ -34,14 +34,14 @@
 	"homepage": "https://osv.bun-security-scanner.com",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/maloma7/bun-osv-scanner.git"
+		"url": "git+https://github.com/bun-security-scanner/osv.git"
 	},
 	"bugs": {
-		"url": "https://github.com/maloma7/bun-osv-scanner/issues"
+		"url": "https://github.com/bun-security-scanner/osv/issues"
 	},
 	"funding": {
 		"type": "github",
-		"url": "https://github.com/sponsors/maloma7"
+		"url": "https://github.com/sponsors/bun-security-scanner"
 	},
 	"scripts": {
 		"dev": "bun run typecheck --watch",

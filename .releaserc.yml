@@ -46,14 +46,17 @@ plugins:
   - "@semantic-release/changelog"
 
   # Publish to npm with OIDC authentication
-  - - "@semantic-release/npm"
-    - tarballDir: release
+  # TEMPORARILY DISABLED: First version must be published manually due to OIDC chicken-and-egg
+  # Re-enable after first manual publish with provenance
+  # - - "@semantic-release/npm"
+  #   - tarballDir: release
 
-  # Create GitHub release with assets
-  - - "@semantic-release/github"
-    - assets:
-        - path: "release/*.tgz"
-          label: "npm package"
+  # Create GitHub release
+  - "@semantic-release/github"
+    # Assets temporarily disabled until npm plugin is re-enabled
+    # - assets:
+    #     - path: "release/*.tgz"
+    #       label: "npm package"
 
   # Commit updated files back to repository
   - - "@semantic-release/git"

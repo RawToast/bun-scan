@@ -186,7 +186,7 @@ OSV_DISABLE_BATCH=false     # Performance vs. security tradeoff
 
 #### **1. Initial Report**
 Please report security vulnerabilities using **GitHub Security Advisories** at:
-https://github.com/maloma7/bun-osv-scanner/security/advisories/new
+https://github.com/bun-security-scanner/osv/security/advisories/new
 
 Include the following information in your report:
 - **Impact Assessment**: Critical/High/Medium/Low
@@ -309,9 +309,9 @@ OSV_API_BASE_URL=https://invalid.example.com bun test
 
 ## Contact Information
 
-- **Security Vulnerabilities**: https://github.com/maloma7/bun-osv-scanner/security/advisories/new
-- **General Issues**: https://github.com/maloma7/bun-osv-scanner/issues
-- **Security Advisories**: https://github.com/maloma7/bun-osv-scanner/security
+- **Security Vulnerabilities**: https://github.com/bun-security-scanner/osv/security/advisories/new
+- **General Issues**: https://github.com/bun-security-scanner/osv/issues
+- **Security Advisories**: https://github.com/bun-security-scanner/osv/security
 
 ---
 

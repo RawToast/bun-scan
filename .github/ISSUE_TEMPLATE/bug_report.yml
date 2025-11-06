@@ -3,7 +3,7 @@ description: Report a bug or issue with the scanner
 title: "[Bug]: "
 labels: ["bug"]
 assignees:
-  - maloma7
+  - bun-security-scanner
 body:
   - type: markdown
     attributes:
@@ -20,7 +20,7 @@ body:
           required: true
         - label: I have read the troubleshooting section in the README
           required: true
-        - label: This issue is specifically related to bun-osv-scanner (not Bun itself or OSV.dev)
+        - label: This issue is specifically related to @bun-security-scanner/osv (not Bun itself or OSV.dev)
           required: true
 
   - type: textarea
@@ -68,7 +68,7 @@ body:
       placeholder: |
         - OS: [e.g., macOS 14.0, Ubuntu 22.04, Windows 11]
         - Bun version: [run `bun --version`]
-        - bun-osv-scanner version: [from package.json]
+        - @bun-security-scanner/osv version: [from package.json]
         - Node.js version (if applicable): [run `node --version`]
       render: markdown
     validations:
@@ -83,7 +83,7 @@ body:
         bunfig.toml:
         ```toml
         [install.security]
-        scanner = "bun-osv-scanner"
+        scanner = "@bun-security-scanner/osv"
         ```
         
         Environment variables:

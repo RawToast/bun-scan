@@ -9,8 +9,8 @@ SPDX-License-Identifier: MIT
 
 A production-grade security scanner for [Bun](https://bun.sh/) that integrates with [OSV.dev](https://osv.dev/) (Open Source Vulnerabilities) to detect known vulnerabilities in npm packages during installation.
 
-[![npm version](https://img.shields.io/npm/v/bun-osv-scanner?color=dc2626)](https://npmjs.com/package/bun-osv-scanner)
-[![npm downloads](https://img.shields.io/npm/dm/bun-osv-scanner?color=dc2626)](https://npmjs.com/package/bun-osv-scanner)
+[![npm version](https://img.shields.io/npm/v/@bun-security-scanner/osv?color=dc2626)](https://npmjs.com/package/@bun-security-scanner/osv)
+[![npm downloads](https://img.shields.io/npm/dm/@bun-security-scanner/osv?color=dc2626)](https://npmjs.com/package/@bun-security-scanner/osv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-dc2626)](LICENSE)
 [![Built with Claude](https://img.shields.io/badge/Built_with-Claude-dc2626?style=flat&logo=claude&logoColor=dc2626)](https://anthropic.com/claude-code)
 [![Checked with Biome](https://img.shields.io/badge/Checked_with-Biome-dc2626?style=flat&logo=biome&logoColor=dc2626)](https://biomejs.dev)
@@ -41,7 +41,7 @@ A production-grade security scanner for [Bun](https://bun.sh/) that integrates w
 
 ```bash
 # Install as a dev dependency
-bun add -d bun-osv-scanner
+bun add -d @bun-security-scanner/osv
 ```
 
 ## Configuration
@@ -52,7 +52,7 @@ Add to your `bunfig.toml`:
 
 ```toml
 [install.security]
-scanner = "bun-osv-scanner"
+scanner = "@bun-security-scanner/osv"
 ```
 
 ### 2. Optional: Configuration Options
@@ -201,15 +201,15 @@ bun run lint
 ### Building from Source
 
 ```bash
-git clone https://github.com/maloma7/bun-osv-scanner.git
-cd bun-osv-scanner
+git clone https://github.com/bun-security-scanner/osv.git
+cd osv
 bun install
 bun run build
 ```
 
 ### Contributing
 
-We do not accept pull requests as this package is actively maintained. However, we appreciate if developers report bugs or suggest features by [opening an issue](https://github.com/maloma7/bun-osv-scanner/issues/new).
+We do not accept pull requests as this package is actively maintained. However, we appreciate if developers report bugs or suggest features by [opening an issue](https://github.com/bun-security-scanner/osv/issues/new).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
@@ -282,7 +282,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Last Updated**: November 3, 2025
-**Version**: 1.0.1
+**Last Updated**: November 6, 2025
+**Version**: 1.0.0
 
 *This documentation is a living document and will be updated as the project evolves and new features are added.*

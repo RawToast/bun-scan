@@ -15,7 +15,7 @@ Thank you for your interest in contributing to the Bun OSV Scanner!
 
 ### Bug Reports
 
-If you encounter a bug, please [create an issue](https://github.com/maloma7/bun-osv-scanner/issues/new) with:
+If you encounter a bug, please [create an issue](https://github.com/bun-security-scanner/osv/issues/new) with:
 
 - **Clear description** of the issue
 - **Steps to reproduce** the bug
@@ -25,7 +25,7 @@ If you encounter a bug, please [create an issue](https://github.com/maloma7/bun-
 
 ### Feature Requests
 
-For new features or enhancements, please [open an issue](https://github.com/maloma7/bun-osv-scanner/issues/new) with:
+For new features or enhancements, please [open an issue](https://github.com/bun-security-scanner/osv/issues/new) with:
 
 - **Use case description** explaining why this feature would be valuable
 - **Proposed behavior** or implementation approach
@@ -34,7 +34,7 @@ For new features or enhancements, please [open an issue](https://github.com/malo
 
 ### Security Vulnerabilities
 
-For security issues, please use [GitHub Security Advisories](https://github.com/maloma7/bun-osv-scanner/security/advisories/new) instead of public issues.
+For security issues, please use [GitHub Security Advisories](https://github.com/bun-security-scanner/osv/security/advisories/new) instead of public issues.
 
 ## Why No Pull Requests?
 
