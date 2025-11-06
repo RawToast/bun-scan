@@ -1,3 +1,16 @@
+## 1.0.0 (2025-11-06)
+
+### Features
+
+* Initial release under @bun-security-scanner/osv organization ([6b35894](https://github.com/bun-security-scanner/osv/commit/6b3589440191fa433fd08aa4147a2f3a105ab1bd))
+
+---
+
+**Note**: This is the first release of the scoped package `@bun-security-scanner/osv`.
+Previous versions were published under the unscoped `bun-osv-scanner` package (now deprecated).
+
+---
+
 ## [2.0.0](https://github.com/maloma7/bun-osv-scanner/compare/v1.0.1...v2.0.0) (2025-11-06)
 
 ### ⚠ BREAKING CHANGES
