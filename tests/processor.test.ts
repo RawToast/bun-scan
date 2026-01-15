@@ -95,7 +95,7 @@ describe("Vulnerability Processor", () => {
 			const result = processor.processVulnerabilities(vulns, packages);
 
 			expect(result.length).toBe(1);
-			expect(result[0]!).toMatchObject({
+			expect(result[0]).toMatchObject({
 				level: "fatal",
 				package: "lodash",
 				description: "Test vulnerability",
@@ -976,7 +976,7 @@ describe("Vulnerability Processor", () => {
 			const result = processor.processVulnerabilities(vulns, packages);
 
 			expect(result.length).toBe(1);
-			expect(result[0]!).toMatchObject({
+			expect(result[0]).toMatchObject({
 				level: "fatal",
 				package: "lodash",
 				url: "https://github.com/advisories/GHSA-c3h9-896r-86jm",

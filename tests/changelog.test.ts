@@ -112,9 +112,9 @@ All notable changes to this project will be documented in this file.
 			// Verify semver descending
 			for (let i = 0; i < versions.length - 1; i++) {
 				const [maj1 = 0, min1 = 0, pat1 = 0] =
-					versions[i]!.split(".").map(Number);
+					versions[i]?.split(".").map(Number) ?? [];
 				const [maj2 = 0, min2 = 0, pat2 = 0] =
-					versions[i + 1]!.split(".").map(Number);
+					versions[i + 1]?.split(".").map(Number) ?? [];
 
 				const isDescending =
 					maj1 > maj2 ||

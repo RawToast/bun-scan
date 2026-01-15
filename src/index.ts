@@ -8,6 +8,7 @@ import "./types.js";
 import { OSVClient } from "./client.js";
 import { VulnerabilityProcessor } from "./processor.js";
 import { logger } from "./logger.js";
+import { loadIgnoreConfig } from "./config.js";
 
 /**
  * Bun Security Scanner for OSV.dev vulnerability detection
@@ -20,9 +21,12 @@ export const scanner: Bun.Security.Scanner = {
 		try {
 			logger.info(`Starting OSV scan for ${packages.length} packages`);
 
+			// Load ignore configuration
+			const ignoreConfig = await loadIgnoreConfig();
+
 			// Initialize components
 			const client = new OSVClient();
-			const processor = new VulnerabilityProcessor();
+			const processor = new VulnerabilityProcessor(ignoreConfig);
 
 			// Fetch vulnerabilities from OSV.dev
 			const vulnerabilities = await client.queryVulnerabilities(packages);

@@ -302,7 +302,7 @@ with multiple lines.
 - Second point
 `;
 
-			const firstLine = commitMessage.split("\n")[0]!;
+			const firstLine = commitMessage.split("\n")[0] ?? "";
 			const isFeat = /^feat(\(.+\))?:/.test(firstLine);
 
 			expect(isFeat).toBe(true);
