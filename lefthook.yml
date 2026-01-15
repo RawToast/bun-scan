@@ -1,11 +1,10 @@
 pre-commit:
   parallel: false
   commands:
-    lint-fix:
-      run: bunx @biomejs/biome check --write .
-      stage_fixed: true
     format:
-      run: bunx @biomejs/biome format --write .
+      run: bun format
       stage_fixed: true
-    typecheck:
-      run: bunx tsc --noEmit
+    lint-fix:
+      run: bun lint:check
+    compile:
+      run: bun compile

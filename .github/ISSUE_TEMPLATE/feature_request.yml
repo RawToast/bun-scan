@@ -83,7 +83,7 @@ body:
         scanner = "@bun-security-scanner/osv"
         new_option = "value"
         ```
-        
+
         Example command:
         ```bash
         bun install --with-new-feature

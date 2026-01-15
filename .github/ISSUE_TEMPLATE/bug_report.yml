@@ -85,7 +85,7 @@ body:
         [install.security]
         scanner = "@bun-security-scanner/osv"
         ```
-        
+
         Environment variables:
         ```bash
         OSV_LOG_LEVEL=debug
