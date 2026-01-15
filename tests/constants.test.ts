@@ -7,26 +7,38 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import { ENV, getConfig, HTTP, OSV_API, PERFORMANCE, SECURITY } from "../src/constants.js"
 
 describe("Constants", () => {
-  // Store original env values
-  const originalEnv: Record<string, string | undefined> = {}
+  const envKeys = [...Object.values(ENV), "TEST_VAR"]
 
-  beforeEach(() => {
-    // Clear test env vars
-    for (const key of Object.values(ENV)) {
+  const captureEnv = (keys: string[]) => {
+    const originalEnv: Record<string, string | undefined> = {}
+
+    for (const key of keys) {
       originalEnv[key] = Bun.env[key]
       delete Bun.env[key]
     }
+
+    return () => {
+      for (const key of keys) {
+        if (originalEnv[key] === undefined) {
+          delete Bun.env[key]
+        } else {
+          Bun.env[key] = originalEnv[key]
+        }
+      }
+    }
+  }
+
+  let restoreEnv: (() => void) | undefined
+
+  beforeEach(() => {
+    // Clear test env vars
+    restoreEnv = captureEnv(envKeys)
   })
 
   afterEach(() => {
     // Restore original env values to avoid test pollution
-    for (const key of Object.values(ENV)) {
-      if (originalEnv[key] === undefined) {
-        delete Bun.env[key]
-      } else {
-        Bun.env[key] = originalEnv[key]
-      }
-    }
+    restoreEnv?.()
+    restoreEnv = undefined
   })
 
   describe("OSV_API Constants", () => {
