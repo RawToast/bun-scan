@@ -1,5 +1,5 @@
 branches:
-  - main
+  - master
 
 plugins:
   # Analyze commits to determine release type

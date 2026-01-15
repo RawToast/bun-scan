@@ -1,4 +1,5 @@
 <!--
+Copyright (c) 2026 rawtoast. All rights reserved.
 Copyright (c) 2025 maloma7. All rights reserved.
 SPDX-License-Identifier: MIT
 -->
@@ -7,7 +8,7 @@ SPDX-License-Identifier: MIT
 
 ## Overview
 
-The Bun OSV Scanner is a security-critical component that protects developers from installing vulnerable npm packages. This document outlines our security practices, threat model, and vulnerability reporting procedures.
+The Bun Scan Scanner is a security-critical component that protects developers from installing vulnerable npm packages. This document outlines our security practices, threat model, and vulnerability reporting procedures.
 
 ## Supported Versions
 
@@ -21,7 +22,7 @@ We provide security updates for the following versions:
 
 ### Threat Model
 
-The Bun OSV Scanner operates in a security-sensitive environment and faces several potential threats:
+The Bun Scan Scanner operates in a security-sensitive environment and faces several potential threats:
 
 #### **1. Supply Chain Attacks**
 - **Threat**: Malicious actors compromising OSV.dev API responses
