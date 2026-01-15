@@ -88,12 +88,14 @@ export OSV_DISABLE_BATCH=false
 The scanner generates two types of security advisories:
 
 #### Fatal (Installation Blocked)
+
 - **CVSS Score**: ≥ 7.0 (High/Critical)
 - **Database Severity**: CRITICAL or HIGH
 - **Action**: Installation is immediately blocked
 - **Examples**: Remote code execution, privilege escalation, data exposure
 
 #### Warning (User Prompted)
+
 - **CVSS Score**: < 7.0 (Medium/Low)
 - **Database Severity**: MEDIUM, LOW, or unspecified
 - **Action**: User is prompted to continue or cancel
@@ -104,6 +106,7 @@ The scanner generates two types of security advisories:
 ### Error Handling Philosophy
 
 The scanner follows a **fail-safe** approach:
+
 - Network errors don't block installations
 - Malformed responses are logged but don't halt the process
 - Scanner crashes return empty advisory arrays (allows installation)
@@ -189,7 +192,7 @@ bun run lint
 ### Test Coverage
 
 - Known vulnerable packages detection
-- Safe package verification  
+- Safe package verification
 - Multiple package scenarios
 - Version-specific vulnerability matching
 - Network failure handling
@@ -219,28 +222,31 @@ For complete OSV.dev API documentation, visit: https://google.github.io/osv.dev/
 
 ### Configuration Reference
 
-| Environment Variable | Default | Description |
-|---------------------|---------|-------------|
-| `OSV_LOG_LEVEL` | `info` | Logging level: debug, info, warn, error |
-| `OSV_API_BASE_URL` | `https://api.osv.dev/v1` | OSV API base URL |
-| `OSV_TIMEOUT_MS` | `30000` | Request timeout in milliseconds |
-| `OSV_DISABLE_BATCH` | `false` | Disable batch queries (use individual queries) |
+| Environment Variable | Default                  | Description                                    |
+| -------------------- | ------------------------ | ---------------------------------------------- |
+| `OSV_LOG_LEVEL`      | `info`                   | Logging level: debug, info, warn, error        |
+| `OSV_API_BASE_URL`   | `https://api.osv.dev/v1` | OSV API base URL                               |
+| `OSV_TIMEOUT_MS`     | `30000`                  | Request timeout in milliseconds                |
+| `OSV_DISABLE_BATCH`  | `false`                  | Disable batch queries (use individual queries) |
 
 ## Troubleshooting
 
 ### Common Issues
 
 **Scanner not running during installation?**
+
 - Verify `bunfig.toml` configuration
 - Check that the package is installed as a dev dependency
 - Enable debug logging: `OSV_LOG_LEVEL=debug bun install`
 
 **Network timeouts?**
+
 - Increase timeout: `OSV_TIMEOUT_MS=60000`
 - Check internet connectivity to osv.dev
 - Consider corporate firewall restrictions
 
 **Too many false positives?**
+
 - OSV.dev data is authoritative - verify vulnerabilities manually
 - Check if you're using an outdated package version
 - Report false positives to the OSV.dev project
@@ -254,8 +260,9 @@ OSV_LOG_LEVEL=debug bun install your-package
 ```
 
 This shows:
+
 - Package deduplication statistics
-- API request/response details  
+- API request/response details
 - Vulnerability matching decisions
 - Performance timing information
 
@@ -278,4 +285,4 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 **Last Updated**: January 15, 2026
 
-*This documentation is a living document and will be updated as the project evolves and new features are added.*
+_This documentation is a living document and will be updated as the project evolves and new features are added._

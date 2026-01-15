@@ -1,16 +1,16 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
-	"vcs": {
-		"enabled": true,
-		"clientKind": "git",
-		"useIgnoreFile": true
-	},
-	"linter": {
-		"domains": {
-			"test": "all"
-		}
-	},
-	"assist": {
-		"enabled": false
-	}
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "linter": {
+    "domains": {
+      "test": "all"
+    }
+  },
+  "assist": {
+    "enabled": false
+  }
 }
