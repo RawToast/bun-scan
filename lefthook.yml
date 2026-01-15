@@ -6,5 +6,5 @@ pre-commit:
       stage_fixed: true
     lint-fix:
       run: bun lint:check
-    typecheck:
-      run: bunx tsc --noEmit
+    compile:
+      run: bun compile
