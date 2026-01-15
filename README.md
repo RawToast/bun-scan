@@ -82,7 +82,7 @@ The scanner looks for `.osvignore.json` or `osv.config.json` in your project roo
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/main/schema/bun-scan.schema.json",
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/schema/bun-scan.schema.json",
   "ignore": ["CVE-2024-1234", "GHSA-xxxx-xxxx-xxxx"]
 }
 ```
@@ -91,7 +91,7 @@ The scanner looks for `.osvignore.json` or `osv.config.json` in your project roo
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/main/schemas/osvignore.schema.json",
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/schema/bun-scan.schema.json",
   "packages": {
     "lodash": {
       "vulnerabilities": ["CVE-2021-23337"],
