@@ -1,5 +1,5 @@
 {
-	"name": "@bun-security-scanner/osv",
+	"name": "@rawtoast/bun-scan",
 	"version": "1.0.0",
 	"description": "OSV vulnerability scanner for Bun projects",
 	"author": "maloma7",
