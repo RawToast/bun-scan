@@ -45,14 +45,13 @@
     "lint": "oxlint",
     "lint:check": "oxlint check",
     "format": "oxfmt",
-    "format:check": "oxfmt check",
+    "format:check": "oxfmt --check",
     "compile": "tsgo --noEmit",
     "clean": "rm -rf dist build node_modules/.cache",
     "check": "bun format && bun run lint:check && bun run typecheck && bun run test",
     "prepare": "bunx lefthook install"
   },
   "dependencies": {
-    "bun-scan": ".",
     "zod": "4.3.5"
   },
   "devDependencies": {
