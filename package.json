@@ -13,19 +13,19 @@
     "vulnerability",
     "vulnerability-scanner"
   ],
-  "homepage": "https://github.com/rawtoast/bun-scan",
+  "homepage": "https://github.com/RawToast/bun-scan",
   "bugs": {
-    "url": "https://github.com/rawtoast/bun-scan/issues"
+    "url": "https://github.com/RawToast/bun-scan/issues"
   },
   "license": "MIT",
   "author": "rawtoast",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rawtoast/bun-scan.git"
+    "url": "https://github.com/RawToast/bun-scan"
   },
   "funding": {
     "type": "github",
-    "url": "https://github.com/sponsors/rawtoast"
+    "url": "https://github.com/sponsors/RawToast"
   },
   "files": [
     "CHANGELOG.md",
