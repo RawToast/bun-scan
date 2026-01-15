@@ -1,16 +1,15 @@
 <!--
+Copyright (c) 2026 rawtoast. All rights reserved.
 Copyright (c) 2025 maloma7. All rights reserved.
 SPDX-License-Identifier: MIT
 -->
-
-<img src="docs/icons/logo.svg" width="100%" alt="Bun OSV Scanner" />
 
 # Bun OSV Scanner
 
 A production-grade security scanner for [Bun](https://bun.sh/) that integrates with [OSV.dev](https://osv.dev/) (Open Source Vulnerabilities) to detect known vulnerabilities in npm packages during installation.
 
-[![npm version](https://img.shields.io/npm/v/@bun-security-scanner/osv?color=dc2626)](https://npmjs.com/package/@bun-security-scanner/osv)
-[![npm downloads](https://img.shields.io/npm/dm/@bun-security-scanner/osv?color=dc2626)](https://npmjs.com/package/@bun-security-scanner/osv)
+[![npm version](https://img.shields.io/npm/v/bun-scan?color=dc2626)](https://npmjs.com/package/bun-scan)
+[![npm downloads](https://img.shields.io/npm/dm/bun-scan?color=dc2626)](https://npmjs.com/package/bun-scan)
 [![License: MIT](https://img.shields.io/badge/License-MIT-dc2626)](LICENSE)
 [![Built with Claude](https://img.shields.io/badge/Built_with-Claude-dc2626?style=flat&logo=claude&logoColor=dc2626)](https://anthropic.com/claude-code)
 [![Checked with Biome](https://img.shields.io/badge/Checked_with-Biome-dc2626?style=flat&logo=biome&logoColor=dc2626)](https://biomejs.dev)
@@ -41,7 +40,7 @@ A production-grade security scanner for [Bun](https://bun.sh/) that integrates w
 
 ```bash
 # Install as a dev dependency
-bun add -d @bun-security-scanner/osv
+bun add -d bun-scan
 ```
 
 ## Configuration
@@ -52,7 +51,7 @@ Add to your `bunfig.toml`:
 
 ```toml
 [install.security]
-scanner = "@bun-security-scanner/osv"
+scanner = "bun-scan"
 ```
 
 ### 2. Optional: Configuration Options
@@ -201,17 +200,11 @@ bun run lint
 ### Building from Source
 
 ```bash
-git clone https://github.com/bun-security-scanner/osv.git
-cd osv
+git clone https://github.com/rawtoast/bun-scan.git
+cd bun-scan
 bun install
 bun run build
 ```
-
-### Contributing
-
-We do not accept pull requests as this package is actively maintained. However, we appreciate if developers report bugs or suggest features by [opening an issue](https://github.com/bun-security-scanner/osv/issues/new).
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## API Reference
 
@@ -274,6 +267,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - **OSV.dev Team**: For maintaining the comprehensive vulnerability database
 - **Bun Team**: For the innovative Security Scanner API
+- **maloma7**: For the original implementation of the Bun OSV Scanner
 
 ## Related Projects
 
@@ -282,7 +276,6 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Last Updated**: November 6, 2025
-**Version**: 1.0.0
+**Last Updated**: January 15, 2026
 
 *This documentation is a living document and will be updated as the project evolves and new features are added.*

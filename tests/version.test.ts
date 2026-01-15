@@ -337,7 +337,7 @@ describe("Version Management", () => {
 
 		test("handles pre-release versions", () => {
 			const version = "1.0.0-alpha.1";
-			const baseVersion = version.split("-")[0]!;
+			const baseVersion = version.split("-")[0] ?? "";
 
 			expect(baseVersion).toBe("1.0.0");
 			expect(/^\d+\.\d+\.\d+$/.test(baseVersion)).toBe(true);
@@ -345,7 +345,7 @@ describe("Version Management", () => {
 
 		test("handles build metadata", () => {
 			const version = "1.0.0+build.123";
-			const baseVersion = version.split("+")[0]!;
+			const baseVersion = version.split("+")[0] ?? "";
 
 			expect(baseVersion).toBe("1.0.0");
 			expect(/^\d+\.\d+\.\d+$/.test(baseVersion)).toBe(true);

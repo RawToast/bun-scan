@@ -8,12 +8,20 @@ import { isPackageAffected } from "./semver.js";
 import { mapSeverityToLevel } from "./severity.js";
 import { SECURITY } from "./constants.js";
 import { logger } from "./logger.js";
+import { type IgnoreConfig, shouldIgnoreVulnerability } from "./config.js";
 
 /**
  * Process OSV vulnerabilities into Bun security advisories
  * Handles vulnerability-to-package matching and advisory generation
  */
 export class VulnerabilityProcessor {
+	private ignoreConfig: IgnoreConfig;
+	private ignoredCount = 0;
+
+	constructor(ignoreConfig: IgnoreConfig = {}) {
+		this.ignoreConfig = ignoreConfig;
+	}
+
 	/**
 	 * Convert OSV vulnerabilities to Bun security advisories
 	 * Matches vulnerabilities against input packages and generates appropriate advisories
@@ -32,6 +40,7 @@ export class VulnerabilityProcessor {
 
 		const advisories: Bun.Security.Advisory[] = [];
 		const processedPairs = new Set<string>(); // Track processed vuln+package pairs
+		this.ignoredCount = 0;
 
 		for (const vuln of vulnerabilities) {
 			const vulnAdvisories = this.processVulnerability(
@@ -40,6 +49,12 @@ export class VulnerabilityProcessor {
 				processedPairs,
 			);
 			advisories.push(...vulnAdvisories);
+		}
+
+		if (this.ignoredCount > 0) {
+			logger.info(
+				`Ignored ${this.ignoredCount} vulnerabilities based on config`,
+			);
 		}
 
 		logger.info(`Generated ${advisories.length} security advisories`);
@@ -71,6 +86,23 @@ export class VulnerabilityProcessor {
 				}
 
 				if (isPackageAffected(pkg, affected)) {
+					// Check if this vulnerability should be ignored
+					const ignoreResult = shouldIgnoreVulnerability(
+						vuln.id,
+						vuln.aliases,
+						pkg.name,
+						this.ignoreConfig,
+					);
+
+					if (ignoreResult.ignored) {
+						logger.debug(
+							`Ignoring ${vuln.id} for ${pkg.name}: ${ignoreResult.reason}`,
+						);
+						this.ignoredCount++;
+						processedPairs.add(pairKey);
+						continue;
+					}
+
 					const advisory = this.createAdvisory(vuln, pkg);
 					advisories.push(advisory);
 					processedPairs.add(pairKey);

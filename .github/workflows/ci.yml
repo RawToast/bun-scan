@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
   push:
-    branches: [main]
+    branches: [master]
 
 permissions:
   contents: read
@@ -53,50 +53,3 @@ jobs:
         run: |
           bun pm pack --dry-run
           echo "Verifying package contents..."
-
-  release:
-    name: Release
-    needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write      # Create tags, releases, commit changelog
-      issues: write        # Comment on released issues
-      pull-requests: write # Comment on released PRs
-      id-token: write      # CRITICAL: OIDC authentication for npm
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-
-      - name: Upgrade npm to latest
-        run: npm install -g npm@latest
-
-      - name: Verify npm version
-        run: npm --version
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Run semantic-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
