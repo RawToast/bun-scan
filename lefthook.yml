@@ -9,8 +9,3 @@ pre-commit:
       stage_fixed: true
     typecheck:
       run: bunx tsc --noEmit
-
-commit-msg:
-  commands:
-    commitlint:
-      run: bunx commitlint --edit {1}
