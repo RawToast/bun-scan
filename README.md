@@ -54,7 +54,58 @@ Add to your `bunfig.toml`:
 scanner = "bun-scan"
 ```
 
-### 2. Optional: Configuration Options
+### 2. Optional: Ignore Specific Vulnerabilities
+
+Create a `.osvignore.json` file in your project root to ignore specific vulnerabilities:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/main/schemas/osvignore.schema.json",
+  "packages": {
+    "hono": {
+      "vulnerabilities": ["CVE-2026-22818"],
+      "reason": "Project does not use JWT from hono"
+    }
+  }
+}
+```
+
+The scanner looks for `.osvignore.json` or `osv.config.json` in your project root.
+
+#### Ignore Configuration Options
+
+| Field                             | Description                                                               |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| `ignore`                          | Array of vulnerability IDs to ignore globally (e.g., `["CVE-2024-1234"]`) |
+| `packages.<name>.vulnerabilities` | Vulnerability IDs to ignore for a specific package                        |
+| `packages.<name>.until`           | Expiration date (ISO 8601) for temporary ignores                          |
+| `packages.<name>.reason`          | Documentation of why the vulnerability is ignored                         |
+
+**Example: Global ignore**
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/main/schema/bun-scan.schema.json",
+  "ignore": ["CVE-2024-1234", "GHSA-xxxx-xxxx-xxxx"]
+}
+```
+
+**Example: Temporary ignore with expiration**
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/main/schemas/osvignore.schema.json",
+  "packages": {
+    "lodash": {
+      "vulnerabilities": ["CVE-2021-23337"],
+      "until": "2024-06-01",
+      "reason": "Temporary ignore while migration is in progress"
+    }
+  }
+}
+```
+
+### 3. Optional: Environment Variables
 
 The scanner can be configured via environment variables:
 
@@ -155,6 +206,7 @@ src/
 ├── index.ts              # Main scanner implementation
 ├── client.ts             # OSV.dev API client with batch support
 ├── processor.ts          # Vulnerability processing and advisory generation
+├── config.ts             # Ignore configuration loading and validation
 ├── cli.ts                # CLI interface for testing
 ├── schema.ts             # Zod schemas for OSV API responses
 ├── constants.ts          # Centralized configuration management
@@ -249,6 +301,7 @@ For complete OSV.dev API documentation, visit: https://google.github.io/osv.dev/
 
 - OSV.dev data is authoritative - verify vulnerabilities manually
 - Check if you're using an outdated package version
+- Use `.osvignore.json` to ignore vulnerabilities that don't apply to your project
 - Report false positives to the OSV.dev project
 
 ### Debug Mode

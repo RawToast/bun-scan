@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/rawtoast/bun-scan/schemas/osvignore.schema.json",
+  "title": "OSV Ignore Configuration",
+  "description": "Configuration file for ignoring specific vulnerabilities in the Bun OSV Scanner",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for IDE support"
+    },
+    "ignore": {
+      "type": "array",
+      "description": "Vulnerability IDs to ignore globally (e.g., CVE-*, GHSA-*)",
+      "items": {
+        "type": "string",
+        "pattern": "^(CVE-|GHSA-|PYSEC-|GO-|RUSTSEC-).+$",
+        "description": "Vulnerability identifier (CVE, GHSA, PYSEC, GO, RUSTSEC)"
+      },
+      "examples": [["CVE-2024-1234", "GHSA-xxxx-xxxx-xxxx"]]
+    },
+    "packages": {
+      "type": "object",
+      "description": "Package-specific ignore rules",
+      "additionalProperties": {
+        "type": "object",
+        "description": "Ignore rules for a specific package",
+        "properties": {
+          "vulnerabilities": {
+            "type": "array",
+            "description": "Vulnerability IDs to ignore for this package",
+            "items": {
+              "type": "string",
+              "pattern": "^(CVE-|GHSA-|PYSEC-|GO-|RUSTSEC-).+$"
+            }
+          },
+          "until": {
+            "type": "string",
+            "format": "date",
+            "description": "Expiration date for this ignore rule (ISO 8601 format, e.g., 2024-12-31). After this date, the vulnerability will be reported again."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Documentation of why this vulnerability is being ignored",
+            "examples": [
+              "Not affected - feature not used in this project",
+              "Mitigated by other controls",
+              "Accepted risk - low impact in our context"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "ignore": ["CVE-2024-1234"]
+    },
+    {
+      "packages": {
+        "hono": {
+          "vulnerabilities": ["CVE-2026-22818"],
+          "reason": "Project does not use JWT from hono"
+        }
+      }
+    },
+    {
+      "ignore": ["GHSA-xxxx-xxxx-xxxx"],
+      "packages": {
+        "lodash": {
+          "vulnerabilities": ["CVE-2021-23337"],
+          "until": "2024-06-01",
+          "reason": "Temporary ignore while migration is in progress"
+        }
+      }
+    }
+  ]
+}
