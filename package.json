@@ -48,7 +48,7 @@
     "format:check": "oxfmt --check",
     "compile": "tsgo --noEmit",
     "clean": "rm -rf dist build node_modules/.cache",
-    "check": "bun format && bun run lint:check && bun run typecheck && bun run test",
+    "check": "bun format && bun lint:check && bun compile && bun test",
     "prepare": "bunx lefthook install"
   },
   "dependencies": {
