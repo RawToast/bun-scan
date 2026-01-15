@@ -1,9 +1,3 @@
-<!--
-Copyright (c) 2026 rawtoast. All rights reserved.
-Copyright (c) 2025 maloma7. All rights reserved.
-SPDX-License-Identifier: MIT
--->
-
 # Bun-Scan
 
 A production-grade security scanner for [Bun](https://bun.sh/) that integrates with [OSV.dev](https://osv.dev/) (Open Source Vulnerabilities) to detect known vulnerabilities in packages during installation.
@@ -330,9 +324,4 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - [Bun Security Scanner API](https://bun.com/docs/install/security-scanner-api)
 - [OSV.dev](https://osv.dev/) - Open Source Vulnerabilities database
-
----
-
-**Last Updated**: January 15, 2026
-
-_This documentation is a living document and will be updated as the project evolves and new features are added._
+- [Bun OSV Scanner](https://github.com/bun-security-scanner/osv)

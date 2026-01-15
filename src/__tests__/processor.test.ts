@@ -1,11 +1,6 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { beforeEach, describe, expect, test } from "bun:test"
-import { VulnerabilityProcessor } from "../src/processor.js"
-import type { OSVVulnerability } from "../src/schema.js"
+import { VulnerabilityProcessor } from "~/processor"
+import type { OSVVulnerability } from "~/schema"
 
 describe("Vulnerability Processor", () => {
   let processor: VulnerabilityProcessor

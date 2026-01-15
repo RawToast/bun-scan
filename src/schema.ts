@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { z } from "zod"
 
 // OSV API request schema

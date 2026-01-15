@@ -3,7 +3,7 @@ description: Suggest a new feature or enhancement
 title: "[Feature]: "
 labels: ["feature"]
 assignees:
-  - bun-security-scanner
+  - rawtoast
 body:
   - type: markdown
     attributes:
@@ -20,7 +20,7 @@ body:
           required: true
         - label: I have read the project documentation and README
           required: true
-        - label: This feature is within the scope of @bun-security-scanner/osv (security scanning for Bun)
+        - label: This feature is within the scope of bun-scan (security scanning for Bun)
           required: true
 
   - type: textarea
@@ -80,7 +80,7 @@ body:
         Example configuration:
         ```toml
         [install.security]
-        scanner = "@bun-security-scanner/osv"
+        scanner = "bun-scan"
         new_option = "value"
         ```
 

@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { OSV_API } from "./constants.js"
 import { logger } from "./logger.js"
 

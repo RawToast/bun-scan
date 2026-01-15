@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 // Bun Security Scanner API types
 // These will be moved to @types/bun when officially released
 

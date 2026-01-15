@@ -1,9 +1,4 @@
 /**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
-/**
  * Structured logging utilities for OSV Scanner
  * Provides consistent, configurable logging with proper levels and context
  */

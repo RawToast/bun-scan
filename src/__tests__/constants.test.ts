@@ -1,10 +1,5 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import { ENV, getConfig, HTTP, OSV_API, PERFORMANCE, SECURITY } from "../src/constants.js"
+import { ENV, getConfig, HTTP, OSV_API, PERFORMANCE, SECURITY } from "~/constants"
 
 describe("Constants", () => {
   const envKeys = [...Object.values(ENV), "TEST_VAR"]

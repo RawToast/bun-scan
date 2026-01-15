@@ -1,9 +1,4 @@
 /**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
-/**
  * Centralized configuration constants for OSV Scanner
  * All magic numbers and configuration values consolidated here
  */

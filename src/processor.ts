@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import type { OSVVulnerability } from "./schema.js"
 import { isPackageAffected } from "./semver.js"
 import { mapSeverityToLevel } from "./severity.js"

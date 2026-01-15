@@ -1,11 +1,6 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { beforeEach, describe, expect, test } from "bun:test"
-import { isPackageAffected } from "../src/semver.js"
-import type { OSVAffected } from "../src/schema.js"
+import { isPackageAffected } from "~/semver"
+import type { OSVAffected } from "~/schema"
 
 describe("Semver Matching", () => {
   beforeEach(() => {

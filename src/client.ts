@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import type { OSVQuery, OSVVulnerability } from "./schema.js"
 import { OSVResponseSchema, OSVBatchResponseSchema, OSVVulnerabilitySchema } from "./schema.js"
 import { OSV_API, HTTP, PERFORMANCE, getConfig, ENV } from "./constants.js"

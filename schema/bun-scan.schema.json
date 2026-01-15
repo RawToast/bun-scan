@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/rawtoast/bun-scan/schemas/osvignore.schema.json",
   "title": "OSV Ignore Configuration",
-  "description": "Configuration file for ignoring specific vulnerabilities in the Bun OSV Scanner",
+  "description": "Configuration file for ignoring specific vulnerabilities",
   "type": "object",
   "properties": {
     "$schema": {

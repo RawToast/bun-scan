@@ -1,11 +1,6 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { beforeEach, describe, expect, test } from "bun:test"
-import { mapSeverityToLevel } from "../src/severity.js"
-import type { OSVVulnerability } from "../src/schema.js"
+import { mapSeverityToLevel } from "~/severity"
+import type { OSVVulnerability } from "~/schema"
 
 describe("Severity Assessment", () => {
   beforeEach(() => {
