@@ -34,7 +34,7 @@ export type IgnorePackageRule = z.infer<typeof IgnorePackageRuleSchema>
 /**
  * Default config file names to search for (in order of priority)
  */
-const CONFIG_FILES = [".osvignore.json", "osv.config.json"] as const
+const CONFIG_FILES = [".bun-scan.json", ".bun-scan.config.json"] as const
 
 /**
  * Load ignore configuration from the current working directory

@@ -4,16 +4,13 @@ Copyright (c) 2025 maloma7. All rights reserved.
 SPDX-License-Identifier: MIT
 -->
 
-# Bun OSV Scanner
+# Bun-Scan
 
-A production-grade security scanner for [Bun](https://bun.sh/) that integrates with [OSV.dev](https://osv.dev/) (Open Source Vulnerabilities) to detect known vulnerabilities in npm packages during installation.
+A production-grade security scanner for [Bun](https://bun.sh/) that integrates with [OSV.dev](https://osv.dev/) (Open Source Vulnerabilities) to detect known vulnerabilities in packages during installation.
 
 [![npm version](https://img.shields.io/npm/v/bun-scan?color=dc2626)](https://npmjs.com/package/bun-scan)
 [![npm downloads](https://img.shields.io/npm/dm/bun-scan?color=dc2626)](https://npmjs.com/package/bun-scan)
 [![License: MIT](https://img.shields.io/badge/License-MIT-dc2626)](LICENSE)
-[![Built with Claude](https://img.shields.io/badge/Built_with-Claude-dc2626?style=flat&logo=claude&logoColor=dc2626)](https://anthropic.com/claude-code)
-[![Checked with Biome](https://img.shields.io/badge/Checked_with-Biome-dc2626?style=flat&logo=biome&logoColor=dc2626)](https://biomejs.dev)
-[![Secured with Lefthook](https://img.shields.io/badge/Secured_with-Lefthook-dc2626?style=flat&logo=lefthook&logoColor=dc2626)](https://lefthook.dev/)
 
 ## What is OSV.dev?
 
@@ -56,11 +53,11 @@ scanner = "bun-scan"
 
 ### 2. Optional: Ignore Specific Vulnerabilities
 
-Create a `.osvignore.json` file in your project root to ignore specific vulnerabilities:
+Create a `.bun-scan.json` file in your project root to ignore specific vulnerabilities:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/main/schemas/osvignore.schema.json",
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/schema/bun-scan.schema.json",
   "packages": {
     "hono": {
       "vulnerabilities": ["CVE-2026-22818"],
