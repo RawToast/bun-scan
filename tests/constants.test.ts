@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { beforeEach, describe, expect, test } from "bun:test"
-import { ENV, HTTP, OSV_API, PERFORMANCE, SECURITY, getConfig } from "../src/constants.js"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
+import { ENV, getConfig, HTTP, OSV_API, PERFORMANCE, SECURITY } from "../src/constants.js"
 
 describe("Constants", () => {
   // Store original env values
@@ -15,6 +15,17 @@ describe("Constants", () => {
     for (const key of Object.values(ENV)) {
       originalEnv[key] = Bun.env[key]
       delete Bun.env[key]
+    }
+  })
+
+  afterEach(() => {
+    // Restore original env values to avoid test pollution
+    for (const key of Object.values(ENV)) {
+      if (originalEnv[key] === undefined) {
+        delete Bun.env[key]
+      } else {
+        Bun.env[key] = originalEnv[key]
+      }
     }
   })
 
