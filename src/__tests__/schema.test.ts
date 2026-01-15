@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { describe, expect, test } from "bun:test"
 import {
   OSVAffectedSchema,
@@ -11,7 +6,7 @@ import {
   OSVQuerySchema,
   OSVResponseSchema,
   OSVVulnerabilitySchema,
-} from "../src/schema.js"
+} from "~/schema"
 
 describe("Schema Validation", () => {
   describe("OSVQuerySchema", () => {

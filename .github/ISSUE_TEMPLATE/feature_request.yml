@@ -3,7 +3,7 @@ description: Suggest a new feature or enhancement
 title: "[Feature]: "
 labels: ["feature"]
 assignees:
-  - bun-security-scanner
+  - rawtoast
 body:
   - type: markdown
     attributes:
@@ -80,7 +80,7 @@ body:
         Example configuration:
         ```toml
         [install.security]
-        scanner = "@bun-security-scanner/osv"
+        scanner = "bun-scan"
         new_option = "value"
         ```
 

@@ -1,10 +1,5 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { beforeEach, describe, expect, test } from "bun:test"
-import { scanner } from "../src/index.js"
+import { scanner } from ".."
 
 describe("Scanner", () => {
   beforeEach(() => {

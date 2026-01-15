@@ -3,7 +3,7 @@ description: Report a bug or issue with the scanner
 title: "[Bug]: "
 labels: ["bug"]
 assignees:
-  - bun-security-scanner
+  - rawtoast
 body:
   - type: markdown
     attributes:
@@ -83,7 +83,7 @@ body:
         bunfig.toml:
         ```toml
         [install.security]
-        scanner = "@bun-security-scanner/osv"
+        scanner = "bun-scan"
         ```
 
         Environment variables:

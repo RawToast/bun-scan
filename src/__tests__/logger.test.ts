@@ -1,10 +1,5 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { beforeEach, describe, expect, spyOn, test } from "bun:test"
-import { logger } from "../src/logger.js"
+import { logger } from "~/logger"
 
 describe("Logger", () => {
   // Store original console methods

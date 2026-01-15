@@ -1,10 +1,5 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 import { beforeEach, describe, expect, test } from "bun:test"
-import { DEFAULT_RETRY_CONFIG, type RetryConfig, withRetry } from "../src/retry.js"
+import { DEFAULT_RETRY_CONFIG, type RetryConfig, withRetry } from "~/retry"
 
 describe("Retry Logic", () => {
   // Store original log level

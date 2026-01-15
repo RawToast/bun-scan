@@ -1,8 +1,3 @@
-/**
- * Copyright (c) 2025 maloma7. All rights reserved.
- * SPDX-License-Identifier: MIT
- */
-
 /// <reference types="bun-types" />
 import "./types.js"
 import { OSVClient } from "./client.js"
