@@ -82,10 +82,10 @@ jobs:
 
       - name: Publish (dry-run)
         if: github.event_name == 'workflow_dispatch' && inputs.publish != 'true'
-        run: npm publish --provenance --dry-run
+        run: npm publish --provenance --access public --dry-run
 
       - name: Publish
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
-        run: npm publish --provenance
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
