@@ -2,6 +2,32 @@ import { OSV_API } from "./constants.js"
 import { logger } from "./logger.js"
 
 /**
+ * Default sleep implementation using setTimeout
+ */
+const defaultSleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Configurable sleep function for testing
+ * Can be replaced with a no-op for fast tests
+ */
+export let sleep = defaultSleep
+
+/**
+ * Override the sleep function (for testing)
+ */
+export function setSleep(fn: (ms: number) => Promise<void>): void {
+  sleep = fn
+}
+
+/**
+ * Reset the sleep function to default
+ */
+export function resetSleep(): void {
+  sleep = defaultSleep
+}
+
+/**
  * Retry configuration for network operations
  */
 export interface RetryConfig {
@@ -73,7 +99,7 @@ export async function withRetry<T>(
         nextDelay: delay,
       })
 
-      await new Promise((resolve) => setTimeout(resolve, delay))
+      await sleep(delay)
     }
   }
 
