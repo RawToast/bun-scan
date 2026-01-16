@@ -1,12 +1,7 @@
-import { beforeEach, describe, expect, test } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { scanner } from ".."
 
 describe("Scanner", () => {
-  beforeEach(() => {
-    // Set log level to error to reduce test output
-    process.env.OSV_LOG_LEVEL = "error"
-  })
-
   describe("Interface Compliance", () => {
     test("implements Bun.Security.Scanner interface", () => {
       expect(scanner).toBeDefined()

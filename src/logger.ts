@@ -1,6 +1,9 @@
 /**
  * Structured logging utilities for OSV Scanner
  * Provides consistent, configurable logging with proper levels and context
+ *
+ * Log level is read ONCE at module load (or factory call) for zero-cost disabled levels.
+ * Disabled log functions are NOPs - no runtime checks.
  */
 
 import { ENV } from "./constants.js"
@@ -8,68 +11,66 @@ import { ENV } from "./constants.js"
 export type LogLevel = "debug" | "info" | "warn" | "error"
 export type LogContext = Record<string, unknown>
 
-interface Logger {
+export type Logger = {
   debug(message: string, context?: LogContext): void
   info(message: string, context?: LogContext): void
   warn(message: string, context?: LogContext): void
   error(message: string, context?: LogContext): void
 }
 
-class OSVLogger implements Logger {
-  private readonly levels = { debug: 0, info: 1, warn: 2, error: 3 }
+const LEVELS = { debug: 0, info: 1, warn: 2, error: 3 } as const
 
-  private parseLogLevel(level?: string): LogLevel | null {
-    if (!level) return null
-    const normalized = level.toLowerCase()
-    return ["debug", "info", "warn", "error"].includes(normalized) ? (normalized as LogLevel) : null
-  }
+function parseLogLevel(level?: string): LogLevel | null {
+  if (!level) return null
+  const normalized = level.toLowerCase()
+  return normalized in LEVELS ? (normalized as LogLevel) : null
+}
 
-  private get minLevel(): LogLevel {
-    return this.parseLogLevel(process.env[ENV.LOG_LEVEL]) || "info"
-  }
-
-  private shouldLog(level: LogLevel): boolean {
-    return this.levels[level] >= this.levels[this.minLevel]
-  }
-
-  private safeStringify(obj: unknown): string {
-    try {
-      return JSON.stringify(obj)
-    } catch {
-      return "[Circular]"
-    }
-  }
-
-  private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
-    const timestamp = new Date().toISOString()
-    const prefix = `[${timestamp}] OSV-${level.toUpperCase()}:`
-    const contextStr = context ? ` ${this.safeStringify(context)}` : ""
-    return `${prefix} ${message}${contextStr}`
-  }
-
-  debug(message: string, context?: LogContext): void {
-    if (this.shouldLog("debug")) {
-      console.debug(this.formatMessage("debug", message, context))
-    }
-  }
-
-  info(message: string, context?: LogContext): void {
-    if (this.shouldLog("info")) {
-      console.info(this.formatMessage("info", message, context))
-    }
-  }
-
-  warn(message: string, context?: LogContext): void {
-    if (this.shouldLog("warn")) {
-      console.warn(this.formatMessage("warn", message, context))
-    }
-  }
-
-  error(message: string, context?: LogContext): void {
-    if (this.shouldLog("error")) {
-      console.error(this.formatMessage("error", message, context))
-    }
+function safeStringify(obj: unknown): string {
+  try {
+    return JSON.stringify(obj)
+  } catch {
+    return "[Circular]"
   }
 }
 
-export const logger = new OSVLogger()
+function formatMessage(level: LogLevel, message: string, context?: LogContext): string {
+  const timestamp = new Date().toISOString()
+  const prefix = `[${timestamp}] OSV-${level.toUpperCase()}:`
+  const contextStr = context ? ` ${safeStringify(context)}` : ""
+  return `${prefix} ${message}${contextStr}`
+}
+
+// NOP function for disabled log levels - zero runtime cost
+const noop = () => {}
+
+// Real log functions
+const realDebug = (message: string, context?: LogContext) =>
+  console.debug(formatMessage("debug", message, context))
+
+const realInfo = (message: string, context?: LogContext) =>
+  console.info(formatMessage("info", message, context))
+
+const realWarn = (message: string, context?: LogContext) =>
+  console.warn(formatMessage("warn", message, context))
+
+const realError = (message: string, context?: LogContext) =>
+  console.error(formatMessage("error", message, context))
+
+/**
+ * Create a logger with the specified log level.
+ * Log level is evaluated once - disabled levels are NOPs with zero runtime cost.
+ */
+export function createLogger(level?: LogLevel): Logger {
+  const minLevel = LEVELS[level ?? parseLogLevel(process.env[ENV.LOG_LEVEL]) ?? "info"]
+
+  return {
+    debug: minLevel <= LEVELS.debug ? realDebug : noop,
+    info: minLevel <= LEVELS.info ? realInfo : noop,
+    warn: minLevel <= LEVELS.warn ? realWarn : noop,
+    error: realError, // always enabled
+  }
+}
+
+/** Default logger - reads OSV_LOG_LEVEL once at module load */
+export const logger = createLogger()

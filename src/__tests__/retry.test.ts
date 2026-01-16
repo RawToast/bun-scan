@@ -1,15 +1,7 @@
-import { beforeEach, describe, expect, test } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { DEFAULT_RETRY_CONFIG, type RetryConfig, withRetry } from "~/retry"
 
 describe("Retry Logic", () => {
-  // Store original log level
-  const _originalLogLevel = process.env.OSV_LOG_LEVEL
-
-  beforeEach(() => {
-    // Set to error to reduce test output noise
-    process.env.OSV_LOG_LEVEL = "error"
-  })
-
   describe("Basic Retry Functionality", () => {
     test("succeeds on first attempt", async () => {
       let attempts = 0

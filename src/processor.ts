@@ -3,18 +3,29 @@ import { isPackageAffected } from "./semver.js"
 import { mapSeverityToLevel } from "./severity.js"
 import { SECURITY } from "./constants.js"
 import { logger } from "./logger.js"
-import { type IgnoreConfig, shouldIgnoreVulnerability } from "./config.js"
+import {
+  type IgnoreConfig,
+  type CompiledIgnoreConfig,
+  compileIgnoreConfig,
+  shouldIgnoreVulnerability,
+} from "./config.js"
+
+/** Hostname regex for URL parsing - avoids expensive new URL() calls */
+const HOSTNAME_REGEX = /^https?:\/\/([^/:?#]+)(?::\d+)?(?:[/?#]|$)/
+
+/** Known CVE reference hosts for prioritization */
+const CVE_HOSTS = new Set(["cve.mitre.org", "nvd.nist.gov"])
 
 /**
  * Process OSV vulnerabilities into Bun security advisories
  * Handles vulnerability-to-package matching and advisory generation
  */
 export class VulnerabilityProcessor {
-  private ignoreConfig: IgnoreConfig
+  private compiledIgnoreConfig: CompiledIgnoreConfig
   private ignoredCount = 0
 
   constructor(ignoreConfig: IgnoreConfig = {}) {
-    this.ignoreConfig = ignoreConfig
+    this.compiledIgnoreConfig = compileIgnoreConfig(ignoreConfig)
   }
 
   /**
@@ -33,12 +44,23 @@ export class VulnerabilityProcessor {
       `Processing ${vulnerabilities.length} vulnerabilities against ${packages.length} packages`,
     )
 
+    // Build package index for O(1) lookup by name (Issue 1 optimization)
+    const packagesByName = new Map<string, Bun.Security.Package[]>()
+    for (const pkg of packages) {
+      const existing = packagesByName.get(pkg.name)
+      if (existing) {
+        existing.push(pkg)
+      } else {
+        packagesByName.set(pkg.name, [pkg])
+      }
+    }
+
     const advisories: Bun.Security.Advisory[] = []
     const processedPairs = new Set<string>() // Track processed vuln+package pairs
     this.ignoredCount = 0
 
     for (const vuln of vulnerabilities) {
-      const vulnAdvisories = this.processVulnerability(vuln, packages, processedPairs)
+      const vulnAdvisories = this.processVulnerability(vuln, packagesByName, processedPairs)
       advisories.push(...vulnAdvisories)
     }
 
@@ -51,11 +73,12 @@ export class VulnerabilityProcessor {
   }
 
   /**
-   * Process a single vulnerability against all packages
+   * Process a single vulnerability against matching packages only
+   * Uses pre-built package index for O(1) name lookup instead of O(n) iteration
    */
   private processVulnerability(
     vuln: OSVVulnerability,
-    packages: Bun.Security.Package[],
+    packagesByName: Map<string, Bun.Security.Package[]>,
     processedPairs: Set<string>,
   ): Bun.Security.Advisory[] {
     const advisories: Bun.Security.Advisory[] = []
@@ -66,7 +89,13 @@ export class VulnerabilityProcessor {
     }
 
     for (const affected of vuln.affected) {
-      for (const pkg of packages) {
+      // Only check packages that match by name (Issue 1 optimization)
+      const matchingPackages = packagesByName.get(affected.package.name)
+      if (!matchingPackages) {
+        continue
+      }
+
+      for (const pkg of matchingPackages) {
         const pairKey = `${vuln.id}:${pkg.name}@${pkg.version}`
 
         // Avoid duplicate advisories for same vulnerability+package
@@ -80,7 +109,7 @@ export class VulnerabilityProcessor {
             vuln.id,
             vuln.aliases,
             pkg.name,
-            this.ignoreConfig,
+            this.compiledIgnoreConfig,
           )
 
           if (ignoreResult.ignored) {
@@ -143,14 +172,11 @@ export class VulnerabilityProcessor {
       return advisoryRef.url
     }
 
-    // Then CVE URLs
+    // Then CVE URLs (Issue 3 optimization: regex instead of new URL())
     const cveRef = vuln.references.find((ref) => {
-      try {
-        const url = new URL(ref.url)
-        return url.hostname === "cve.mitre.org" || url.hostname === "nvd.nist.gov"
-      } catch {
-        return false
-      }
+      const match = ref.url.match(HOSTNAME_REGEX)
+      const hostname = match?.[1]?.toLowerCase()
+      return hostname ? CVE_HOSTS.has(hostname) : false
     })
     if (cveRef) {
       return cveRef.url
