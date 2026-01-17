@@ -114,6 +114,30 @@ export OSV_TIMEOUT_MS=30000
 export OSV_DISABLE_BATCH=false
 ```
 
+### 4. Optional: Vulnerability Sources
+
+Configure which vulnerability database to query:
+
+```json
+{
+  "source": "osv"
+}
+```
+
+| Source          | Description                                                 |
+| --------------- | ----------------------------------------------------------- |
+| `osv` (default) | Query OSV.dev (Google's Open Source Vulnerability database) |
+| `npm`           | Query npm Registry (GitHub Advisory Database)               |
+| `both`          | Query both sources and deduplicate results                  |
+
+Using `both` provides maximum coverage but takes longer as it queries two APIs.
+
+#### Dedupe and Ignore Behavior
+
+When using `both`, advisories are deduplicated by package when they share IDs or aliases (CVE or GHSA). For example, the same vulnerability might be reported as `GHSA-xxxx` from OSV and as `1234567` from npm, but both share `CVE-2024-xxxx` - bun-scan will recognize these as the same vulnerability.
+
+Ignore rules are matched against both advisory IDs and aliases, so you can ignore either the CVE or GHSA identifier for the same issue.
+
 ## How It Works
 
 ### Security Scanning Process
