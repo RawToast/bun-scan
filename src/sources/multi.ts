@@ -1,53 +1,37 @@
 import type { VulnerabilitySource } from "./types.js"
 import { logger } from "../logger.js"
 
+/** Multi-source scanner interface */
+export interface MultiSourceScanner {
+  scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]>
+}
+
 /**
- * Scanner that queries multiple vulnerability sources in parallel
+ * Create a scanner that queries multiple vulnerability sources in parallel
  * Deduplicates results by ID/alias and takes highest severity for duplicates
  */
-export class MultiSourceScanner {
-  private readonly sources: VulnerabilitySource[]
-
-  constructor(sources: VulnerabilitySource[]) {
-    if (sources.length === 0) {
-      throw new Error("MultiSourceScanner requires at least one source")
-    }
-    this.sources = sources
+export function createMultiSourceScanner(sources: VulnerabilitySource[]): MultiSourceScanner {
+  if (sources.length === 0) {
+    throw new Error("MultiSourceScanner requires at least one source")
   }
 
-  async scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]> {
-    const sourceNames = this.sources.map((s) => s.name).join(", ")
-    logger.info(`Scanning with sources: ${sourceNames}`)
-
-    // Query all sources in parallel
-    const results = await Promise.allSettled(this.sources.map((source) => source.scan(packages)))
-
-    // Collect all advisories
-    const allAdvisories: Bun.Security.Advisory[] = []
-
-    for (const [i, result] of results.entries()) {
-      const source = this.sources[i]
-      if (!source) continue
-
-      if (result.status === "fulfilled") {
-        logger.info(`[${source.name}] Found ${result.value.length} advisories`)
-        allAdvisories.push(...result.value)
-      } else {
-        logger.error(`[${source.name}] Scan failed`, {
-          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
-        })
-      }
-    }
-
-    return this.deduplicateAdvisories(allAdvisories)
+  /**
+   * Compare severity levels - returns true if a is higher severity than b
+   */
+  function isHigherSeverity(
+    a: Bun.Security.Advisory["level"],
+    b: Bun.Security.Advisory["level"],
+  ): boolean {
+    const priority: Record<string, number> = { fatal: 2, warn: 1 }
+    return (priority[a] ?? 0) > (priority[b] ?? 0)
   }
 
   /**
    * Deduplicate advisories by package + any overlapping id/alias
    * When duplicates exist, keep the one with highest severity (fatal > warn)
    */
-  private deduplicateAdvisories(advisories: Bun.Security.Advisory[]): Bun.Security.Advisory[] {
-    // Map from key → advisory, where key is "package:id" for any id/alias
+  function deduplicateAdvisories(advisories: Bun.Security.Advisory[]): Bun.Security.Advisory[] {
+    // Map from key -> advisory, where key is "package:id" for any id/alias
     const map = new Map<string, Bun.Security.Advisory>()
 
     for (const advisory of advisories) {
@@ -74,7 +58,7 @@ export class MultiSourceScanner {
 
       // Existing entry found - keep the one with higher severity
       const existing = map.get(existingKey)!
-      const winner = this.isHigherSeverity(advisory.level, existing.level) ? advisory : existing
+      const winner = isHigherSeverity(advisory.level, existing.level) ? advisory : existing
 
       // Merge all IDs from both advisories and update all keys to point to winner
       const existingIds = new Set([existing.id, ...(existing.aliases ?? [])])
@@ -89,11 +73,34 @@ export class MultiSourceScanner {
     return Array.from(new Set(map.values()))
   }
 
-  private isHigherSeverity(
-    a: Bun.Security.Advisory["level"],
-    b: Bun.Security.Advisory["level"],
-  ): boolean {
-    const priority: Record<string, number> = { fatal: 2, warn: 1 }
-    return (priority[a] ?? 0) > (priority[b] ?? 0)
+  async function scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]> {
+    const sourceNames = sources.map((s) => s.name).join(", ")
+    logger.info(`Scanning with sources: ${sourceNames}`)
+
+    // Query all sources in parallel
+    const results = await Promise.allSettled(sources.map((source) => source.scan(packages)))
+
+    // Collect all advisories
+    const allAdvisories: Bun.Security.Advisory[] = []
+
+    for (const [i, result] of results.entries()) {
+      const source = sources[i]
+      if (!source) continue
+
+      if (result.status === "fulfilled") {
+        logger.info(`[${source.name}] Found ${result.value.length} advisories`)
+        allAdvisories.push(...result.value)
+      } else {
+        logger.error(`[${source.name}] Scan failed`, {
+          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+        })
+      }
+    }
+
+    return deduplicateAdvisories(allAdvisories)
+  }
+
+  return {
+    scan,
   }
 }

@@ -2,7 +2,7 @@
 import "./types.js"
 import { loadConfig } from "./config.js"
 import { createSources } from "./sources/factory.js"
-import { MultiSourceScanner } from "./sources/multi.js"
+import { createMultiSourceScanner } from "./sources/multi.js"
 import { logger } from "./logger.js"
 
 /**
@@ -23,7 +23,7 @@ export const scanner: Bun.Security.Scanner = {
       const sources = createSources(config.source ?? "osv", config)
 
       // Scan with all configured sources
-      const multiScanner = new MultiSourceScanner(sources)
+      const multiScanner = createMultiSourceScanner(sources)
       const advisories = await multiScanner.scan(packages)
 
       logger.info(

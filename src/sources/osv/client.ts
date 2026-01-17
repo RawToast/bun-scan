@@ -4,54 +4,24 @@ import { OSV_API, HTTP, PERFORMANCE, getConfig, ENV } from "../../constants.js"
 import { withRetry } from "../../retry.js"
 import { logger } from "../../logger.js"
 
+/** OSV Client interface */
+export interface OSVClient {
+  queryVulnerabilities(packages: Bun.Security.Package[]): Promise<OSVVulnerability[]>
+}
+
 /**
- * OSV API Client
+ * Create an OSV API Client
  * Handles all communication with OSV.dev API including batch queries and individual lookups
  */
-export class OSVClient {
-  private readonly baseUrl: string
-  private readonly timeout: number
-  private readonly useBatch: boolean
-
-  constructor() {
-    this.baseUrl = getConfig(ENV.API_BASE_URL, OSV_API.BASE_URL)
-    this.timeout = getConfig(ENV.TIMEOUT_MS, OSV_API.TIMEOUT_MS)
-    this.useBatch = !getConfig(ENV.DISABLE_BATCH, false)
-  }
-
-  /**
-   * Query vulnerabilities for multiple packages
-   * Uses batch API when possible for better performance
-   */
-  async queryVulnerabilities(packages: Bun.Security.Package[]): Promise<OSVVulnerability[]> {
-    if (packages.length === 0) {
-      return []
-    }
-
-    // Deduplicate packages by name@version
-    const uniquePackages = this.deduplicatePackages(packages)
-    logger.info(`Scanning ${uniquePackages.length} unique packages (${packages.length} total)`)
-
-    // Create OSV queries
-    const queries = uniquePackages.map((pkg) => ({
-      package: {
-        name: pkg.name,
-        ecosystem: OSV_API.DEFAULT_ECOSYSTEM,
-      },
-      version: pkg.version,
-    }))
-
-    if (this.useBatch && queries.length > 1) {
-      return await this.queryWithBatch(queries)
-    } else {
-      return await this.queryIndividually(queries)
-    }
-  }
+export function createOSVClient(): OSVClient {
+  const baseUrl = getConfig(ENV.API_BASE_URL, OSV_API.BASE_URL)
+  const timeout = getConfig(ENV.TIMEOUT_MS, OSV_API.TIMEOUT_MS)
+  const useBatch = !getConfig(ENV.DISABLE_BATCH, false)
 
   /**
    * Deduplicate packages by name@version to avoid redundant queries
    */
-  private deduplicatePackages(packages: Bun.Security.Package[]): Bun.Security.Package[] {
+  function deduplicatePackages(packages: Bun.Security.Package[]): Bun.Security.Package[] {
     const packageMap = new Map<string, Bun.Security.Package>()
 
     for (const pkg of packages) {
@@ -73,47 +43,20 @@ export class OSVClient {
   }
 
   /**
-   * Use batch API for efficient querying
-   * Follows OSV.dev recommended pattern: batch query → individual details
-   */
-  private async queryWithBatch(queries: OSVQuery[]): Promise<OSVVulnerability[]> {
-    const vulnerabilityIds: string[] = []
-
-    // Process queries in batches
-    for (let i = 0; i < queries.length; i += OSV_API.MAX_BATCH_SIZE) {
-      const batchQueries = queries.slice(i, i + OSV_API.MAX_BATCH_SIZE)
-
-      try {
-        const batchIds = await this.executeBatchQuery(batchQueries)
-        vulnerabilityIds.push(...batchIds)
-      } catch (error) {
-        logger.error(`Batch query failed for ${batchQueries.length} packages`, {
-          error: error instanceof Error ? error.message : String(error),
-          startIndex: i,
-        })
-        // Continue with next batch rather than failing completely
-      }
-    }
-
-    // Fetch detailed vulnerability information
-    return await this.fetchVulnerabilityDetails(vulnerabilityIds)
-  }
-
-  /**
    * Execute a single batch query
    */
-  private async executeBatchQuery(queries: OSVQuery[]): Promise<string[]> {
+  async function executeBatchQuery(queries: OSVQuery[]): Promise<string[]> {
     const vulnerabilityIds: string[] = []
 
     const response = await withRetry(async () => {
-      const res = await fetch(`${this.baseUrl}/querybatch`, {
+      const res = await fetch(`${baseUrl}/querybatch`, {
         method: "POST",
         headers: {
           "Content-Type": HTTP.CONTENT_TYPE,
           "User-Agent": HTTP.USER_AGENT,
         },
         body: JSON.stringify({ queries }),
-        signal: AbortSignal.timeout(this.timeout),
+        signal: AbortSignal.timeout(timeout),
       })
 
       if (!res.ok) {
@@ -140,31 +83,92 @@ export class OSVClient {
   }
 
   /**
-   * Query packages individually (fallback method)
+   * Fetch a single vulnerability by ID
    */
-  private async queryIndividually(queries: OSVQuery[]): Promise<OSVVulnerability[]> {
-    const responses = await Promise.allSettled(
-      queries.map((query) => this.querySinglePackage(query)),
-    )
+  async function fetchSingleVulnerability(id: string): Promise<OSVVulnerability | null> {
+    try {
+      return await withRetry(async () => {
+        const response = await fetch(`${baseUrl}/vulns/${id}`, {
+          headers: {
+            "User-Agent": HTTP.USER_AGENT,
+          },
+          signal: AbortSignal.timeout(timeout),
+        })
 
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        return OSVVulnerabilitySchema.parse(data)
+      }, `Get vulnerability ${id}`)
+    } catch (error) {
+      logger.warn(`Failed to fetch vulnerability ${id}`, {
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return null
+    }
+  }
+
+  /**
+   * Fetch detailed vulnerability information by IDs
+   */
+  async function fetchVulnerabilityDetails(ids: string[]): Promise<OSVVulnerability[]> {
+    if (ids.length === 0) return []
+
+    const uniqueIds = [...new Set(ids)] // Deduplicate requests
+    logger.info(`Fetching details for ${uniqueIds.length} vulnerabilities`)
+
+    // Process in smaller chunks to avoid overwhelming the API
+    const chunkSize = PERFORMANCE.MAX_CONCURRENT_DETAILS
     const vulnerabilities: OSVVulnerability[] = []
-    let successCount = 0
 
-    for (const response of responses) {
-      if (response.status === "fulfilled") {
-        vulnerabilities.push(...response.value)
-        successCount++
+    for (let i = 0; i < uniqueIds.length; i += chunkSize) {
+      const chunk = uniqueIds.slice(i, i + chunkSize)
+      const chunkResults = await Promise.allSettled(chunk.map((id) => fetchSingleVulnerability(id)))
+
+      for (const result of chunkResults) {
+        if (result.status === "fulfilled" && result.value) {
+          vulnerabilities.push(result.value)
+        }
       }
     }
 
-    logger.info(`Individual queries completed: ${successCount}/${queries.length} successful`)
+    logger.info(`Retrieved ${vulnerabilities.length}/${uniqueIds.length} vulnerability details`)
     return vulnerabilities
+  }
+
+  /**
+   * Use batch API for efficient querying
+   * Follows OSV.dev recommended pattern: batch query -> individual details
+   */
+  async function queryWithBatch(queries: OSVQuery[]): Promise<OSVVulnerability[]> {
+    const vulnerabilityIds: string[] = []
+
+    // Process queries in batches
+    for (let i = 0; i < queries.length; i += OSV_API.MAX_BATCH_SIZE) {
+      const batchQueries = queries.slice(i, i + OSV_API.MAX_BATCH_SIZE)
+
+      try {
+        const batchIds = await executeBatchQuery(batchQueries)
+        vulnerabilityIds.push(...batchIds)
+      } catch (error) {
+        logger.error(`Batch query failed for ${batchQueries.length} packages`, {
+          error: error instanceof Error ? error.message : String(error),
+          startIndex: i,
+        })
+        // Continue with next batch rather than failing completely
+      }
+    }
+
+    // Fetch detailed vulnerability information
+    return await fetchVulnerabilityDetails(vulnerabilityIds)
   }
 
   /**
    * Query a single package with pagination support
    */
-  private async querySinglePackage(query: OSVQuery): Promise<OSVVulnerability[]> {
+  async function querySinglePackage(query: OSVQuery): Promise<OSVVulnerability[]> {
     const allVulns: OSVVulnerability[] = []
     let currentQuery = { ...query }
 
@@ -172,14 +176,14 @@ export class OSVClient {
       try {
         const response = await withRetry(
           async () => {
-            const res = await fetch(`${this.baseUrl}/query`, {
+            const res = await fetch(`${baseUrl}/query`, {
               method: "POST",
               headers: {
                 "Content-Type": HTTP.CONTENT_TYPE,
                 "User-Agent": HTTP.USER_AGENT,
               },
               body: JSON.stringify(currentQuery),
-              signal: AbortSignal.timeout(this.timeout),
+              signal: AbortSignal.timeout(timeout),
             })
 
             if (!res.ok) {
@@ -220,60 +224,57 @@ export class OSVClient {
   }
 
   /**
-   * Fetch detailed vulnerability information by IDs
+   * Query packages individually (fallback method)
    */
-  private async fetchVulnerabilityDetails(ids: string[]): Promise<OSVVulnerability[]> {
-    if (ids.length === 0) return []
+  async function queryIndividually(queries: OSVQuery[]): Promise<OSVVulnerability[]> {
+    const responses = await Promise.allSettled(queries.map((query) => querySinglePackage(query)))
 
-    const uniqueIds = [...new Set(ids)] // Deduplicate requests
-    logger.info(`Fetching details for ${uniqueIds.length} vulnerabilities`)
-
-    // Process in smaller chunks to avoid overwhelming the API
-    const chunkSize = PERFORMANCE.MAX_CONCURRENT_DETAILS
     const vulnerabilities: OSVVulnerability[] = []
+    let successCount = 0
 
-    for (let i = 0; i < uniqueIds.length; i += chunkSize) {
-      const chunk = uniqueIds.slice(i, i + chunkSize)
-      const chunkResults = await Promise.allSettled(
-        chunk.map((id) => this.fetchSingleVulnerability(id)),
-      )
-
-      for (const result of chunkResults) {
-        if (result.status === "fulfilled" && result.value) {
-          vulnerabilities.push(result.value)
-        }
+    for (const response of responses) {
+      if (response.status === "fulfilled") {
+        vulnerabilities.push(...response.value)
+        successCount++
       }
     }
 
-    logger.info(`Retrieved ${vulnerabilities.length}/${uniqueIds.length} vulnerability details`)
+    logger.info(`Individual queries completed: ${successCount}/${queries.length} successful`)
     return vulnerabilities
   }
 
   /**
-   * Fetch a single vulnerability by ID
+   * Query vulnerabilities for multiple packages
+   * Uses batch API when possible for better performance
    */
-  private async fetchSingleVulnerability(id: string): Promise<OSVVulnerability | null> {
-    try {
-      return await withRetry(async () => {
-        const response = await fetch(`${this.baseUrl}/vulns/${id}`, {
-          headers: {
-            "User-Agent": HTTP.USER_AGENT,
-          },
-          signal: AbortSignal.timeout(this.timeout),
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-
-        const data = await response.json()
-        return OSVVulnerabilitySchema.parse(data)
-      }, `Get vulnerability ${id}`)
-    } catch (error) {
-      logger.warn(`Failed to fetch vulnerability ${id}`, {
-        error: error instanceof Error ? error.message : String(error),
-      })
-      return null
+  async function queryVulnerabilities(
+    packages: Bun.Security.Package[],
+  ): Promise<OSVVulnerability[]> {
+    if (packages.length === 0) {
+      return []
     }
+
+    // Deduplicate packages by name@version
+    const uniquePackages = deduplicatePackages(packages)
+    logger.info(`Scanning ${uniquePackages.length} unique packages (${packages.length} total)`)
+
+    // Create OSV queries
+    const queries = uniquePackages.map((pkg) => ({
+      package: {
+        name: pkg.name,
+        ecosystem: OSV_API.DEFAULT_ECOSYSTEM,
+      },
+      version: pkg.version,
+    }))
+
+    if (useBatch && queries.length > 1) {
+      return await queryWithBatch(queries)
+    } else {
+      return await queryIndividually(queries)
+    }
+  }
+
+  return {
+    queryVulnerabilities,
   }
 }
