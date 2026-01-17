@@ -3,7 +3,8 @@
  */
 
 import type { NpmAdvisory } from "./schema.js"
-import type { IgnoreConfig } from "../../config.js"
+import type { IgnoreConfig, CompiledIgnoreConfig } from "../../config.js"
+import { compileIgnoreConfig, shouldIgnoreVulnerability } from "../../config.js"
 import { mapSeverityToLevel } from "./severity.js"
 import { SECURITY } from "./constants.js"
 import { logger } from "../../logger.js"
@@ -13,8 +14,11 @@ import { logger } from "../../logger.js"
  * Handles advisory-to-package matching and Bun advisory generation
  */
 export class AdvisoryProcessor {
-  constructor(_ignoreConfig: IgnoreConfig) {
-    // ignoreConfig reserved for future filtering implementation
+  private readonly compiledIgnoreConfig: CompiledIgnoreConfig
+  private ignoredCount = 0
+
+  constructor(ignoreConfig: IgnoreConfig = {}) {
+    this.compiledIgnoreConfig = compileIgnoreConfig(ignoreConfig)
   }
 
   /**
@@ -31,6 +35,9 @@ export class AdvisoryProcessor {
 
     logger.info(`Processing ${advisories.length} advisories against ${packages.length} packages`)
 
+    // Reset ignored count for this batch
+    this.ignoredCount = 0
+
     const bunAdvisories: Bun.Security.Advisory[] = []
     const processedPairs = new Set<string>() // Track processed advisory+package pairs
 
@@ -39,8 +46,21 @@ export class AdvisoryProcessor {
       bunAdvisories.push(...matched)
     }
 
+    if (this.ignoredCount > 0) {
+      logger.info(`Ignored ${this.ignoredCount} advisories based on configuration`)
+    }
     logger.info(`Generated ${bunAdvisories.length} security advisories`)
     return bunAdvisories
+  }
+
+  /**
+   * Build aliases from CVEs and GHSA ID for deduplication
+   */
+  private buildAliases(advisory: NpmAdvisory): string[] {
+    return [
+      ...(advisory.cves ?? []),
+      ...(advisory.github_advisory_id ? [advisory.github_advisory_id] : []),
+    ]
   }
 
   /**
@@ -60,6 +80,9 @@ export class AdvisoryProcessor {
       return bunAdvisories
     }
 
+    // Build aliases for ignore check and deduplication
+    const aliases = this.buildAliases(advisory)
+
     // Find matching packages
     for (const pkg of packages) {
       // Check if package name matches
@@ -76,7 +99,22 @@ export class AdvisoryProcessor {
 
       // Check if package version is affected
       if (this.isVersionAffected(pkg.version, advisory.vulnerable_versions)) {
-        const bunAdvisory = this.createBunAdvisory(advisory, pkg)
+        // Check ignore configuration before creating advisory
+        const ignoreResult = shouldIgnoreVulnerability(
+          String(advisory.id),
+          aliases,
+          pkg.name,
+          this.compiledIgnoreConfig,
+        )
+
+        if (ignoreResult.ignored) {
+          logger.debug(`Ignoring ${advisory.id} for ${pkg.name}: ${ignoreResult.reason}`)
+          this.ignoredCount++
+          processedPairs.add(pairKey)
+          continue
+        }
+
+        const bunAdvisory = this.createBunAdvisory(advisory, pkg, aliases)
         bunAdvisories.push(bunAdvisory)
         processedPairs.add(pairKey)
 
@@ -112,6 +150,7 @@ export class AdvisoryProcessor {
   private createBunAdvisory(
     advisory: NpmAdvisory,
     pkg: Bun.Security.Package,
+    aliases: string[],
   ): Bun.Security.Advisory {
     const level = mapSeverityToLevel(advisory.severity)
     const description = this.getAdvisoryDescription(advisory)
@@ -124,6 +163,7 @@ export class AdvisoryProcessor {
       package: pkg.name,
       url: advisory.url,
       description,
+      aliases,
     }
   }
 

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test"
 import { NpmSource } from "~/sources/npm"
 import type { VulnerabilitySource } from "~/sources/types"
 import { NpmAuditResponseSchema } from "~/sources/npm/schema"
+import { AdvisoryProcessor } from "~/sources/npm/processor"
 
 describe("NpmSource", () => {
   beforeEach(() => {
@@ -140,5 +141,160 @@ describe("npm bulk response parsing", () => {
     const response = {}
     const parsed = NpmAuditResponseSchema.parse(response)
     expect(Object.keys(parsed)).toHaveLength(0)
+  })
+})
+
+describe("AdvisoryProcessor ignore configuration", () => {
+  beforeEach(() => {
+    process.env.BUN_SCAN_LOG_LEVEL = "error"
+  })
+
+  // Helper to create a proper Bun.Security.Package
+  const makePackage = (name: string, version: string): Bun.Security.Package => ({
+    name,
+    version,
+    tarball: `https://registry.npmjs.org/${name}/-/${name}-${version}.tgz`,
+    requestedRange: "*",
+  })
+
+  test("ignores globally ignored advisories by id", () => {
+    const processor = new AdvisoryProcessor({ ignore: ["1103907"] })
+    const advisories = [
+      {
+        id: 1103907,
+        title: "Test advisory",
+        severity: "low",
+        vulnerable_versions: "<1.0.0",
+        url: "https://example.com",
+        name: "test-pkg",
+      },
+    ]
+    const packages = [makePackage("test-pkg", "0.5.0")]
+
+    const result = processor.processAdvisories(advisories as any, packages)
+    expect(result).toHaveLength(0)
+  })
+
+  test("ignores globally ignored advisories by CVE alias", () => {
+    const processor = new AdvisoryProcessor({ ignore: ["CVE-2024-1234"] })
+    const advisories = [
+      {
+        id: 1103907,
+        title: "Test advisory",
+        severity: "low",
+        vulnerable_versions: "<1.0.0",
+        url: "https://example.com",
+        name: "test-pkg",
+        cves: ["CVE-2024-1234"],
+      },
+    ]
+    const packages = [makePackage("test-pkg", "0.5.0")]
+
+    const result = processor.processAdvisories(advisories as any, packages)
+    expect(result).toHaveLength(0)
+  })
+
+  test("ignores globally ignored advisories by GHSA alias", () => {
+    const processor = new AdvisoryProcessor({ ignore: ["GHSA-xxxx-xxxx-xxxx"] })
+    const advisories = [
+      {
+        id: 1103907,
+        title: "Test advisory",
+        severity: "low",
+        vulnerable_versions: "<1.0.0",
+        url: "https://example.com",
+        name: "test-pkg",
+        github_advisory_id: "GHSA-xxxx-xxxx-xxxx",
+      },
+    ]
+    const packages = [makePackage("test-pkg", "0.5.0")]
+
+    const result = processor.processAdvisories(advisories as any, packages)
+    expect(result).toHaveLength(0)
+  })
+
+  test("ignores package-specific vulnerabilities", () => {
+    const processor = new AdvisoryProcessor({
+      packages: {
+        "test-pkg": {
+          vulnerabilities: ["CVE-2024-1234"],
+          reason: "Not affected in our usage",
+        },
+      },
+    })
+    const advisories = [
+      {
+        id: 1103907,
+        title: "Test advisory",
+        severity: "low",
+        vulnerable_versions: "<1.0.0",
+        url: "https://example.com",
+        name: "test-pkg",
+        cves: ["CVE-2024-1234"],
+      },
+    ]
+    const packages = [makePackage("test-pkg", "0.5.0")]
+
+    const result = processor.processAdvisories(advisories as any, packages)
+    expect(result).toHaveLength(0)
+  })
+
+  test("does not ignore non-matching advisories", () => {
+    const processor = new AdvisoryProcessor({ ignore: ["CVE-9999-9999"] })
+    const advisories = [
+      {
+        id: 1103907,
+        title: "Test advisory",
+        severity: "low",
+        vulnerable_versions: "<1.0.0",
+        url: "https://example.com",
+        name: "test-pkg",
+        cves: ["CVE-2024-1234"],
+      },
+    ]
+    const packages = [makePackage("test-pkg", "0.5.0")]
+
+    const result = processor.processAdvisories(advisories as any, packages)
+    expect(result).toHaveLength(1)
+  })
+
+  test("includes aliases in returned advisory", () => {
+    const processor = new AdvisoryProcessor({})
+    const advisories = [
+      {
+        id: 1103907,
+        title: "Test advisory",
+        severity: "low",
+        vulnerable_versions: "<1.0.0",
+        url: "https://example.com",
+        name: "test-pkg",
+        cves: ["CVE-2024-1234", "CVE-2024-5678"],
+        github_advisory_id: "GHSA-xxxx-xxxx-xxxx",
+      },
+    ]
+    const packages = [makePackage("test-pkg", "0.5.0")]
+
+    const result = processor.processAdvisories(advisories as any, packages)
+    expect(result).toHaveLength(1)
+    expect(result[0]!.aliases).toEqual(["CVE-2024-1234", "CVE-2024-5678", "GHSA-xxxx-xxxx-xxxx"])
+  })
+
+  test("handles advisory with no aliases", () => {
+    const processor = new AdvisoryProcessor({})
+    const advisories = [
+      {
+        id: 1103907,
+        title: "Test advisory",
+        severity: "low",
+        vulnerable_versions: "<1.0.0",
+        url: "https://example.com",
+        name: "test-pkg",
+      },
+    ]
+    const packages = [makePackage("test-pkg", "0.5.0")]
+
+    const result = processor.processAdvisories(advisories as any, packages)
+    expect(result).toHaveLength(1)
+    expect(result[0]!.aliases).toEqual([])
   })
 })
