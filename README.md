@@ -6,24 +6,12 @@ A production-grade security scanner for [Bun](https://bun.sh/) that integrates w
 [![npm downloads](https://img.shields.io/npm/dm/bun-scan?color=dc2626)](https://npmjs.com/package/bun-scan)
 [![License: MIT](https://img.shields.io/badge/License-MIT-dc2626)](LICENSE)
 
-## What is OSV.dev?
-
-[OSV.dev](https://osv.dev/) is Google's open source vulnerability database that aggregates and distributes vulnerability information for open source projects. It provides:
-
-- **Comprehensive Coverage**: Vulnerabilities from multiple sources (npm, PyPI, Go, Rust, etc.)
-- **Structured Data**: Machine-readable vulnerability information with precise version ranges
-- **Real-time Updates**: Continuously updated with the latest security advisories
-- **Authoritative Source**: Maintained by Google and the open source community
-
 ## Features
 
 - **Real-time Scanning**: Checks packages against OSV.dev during installation
 - **High Performance**: Efficient batch queries with smart deduplication
 - **Fail-safe**: Never blocks installations due to scanner errors
-- **Structured Logging**: Configurable logging levels with contextual information
-- **Precise Matching**: Accurate vulnerability-to-package version matching
-- **Configurable**: Environment variable configuration for all settings
-- **Well Tested**: Comprehensive test suite with edge case coverage
+- **Configurable**: Configuration for all settings
 
 ## Installation
 
@@ -60,17 +48,6 @@ Create a `.bun-scan.json` file in your project root to ignore specific vulnerabi
   }
 }
 ```
-
-The scanner looks for `.osvignore.json` or `osv.config.json` in your project root.
-
-#### Ignore Configuration Options
-
-| Field                             | Description                                                               |
-| --------------------------------- | ------------------------------------------------------------------------- |
-| `ignore`                          | Array of vulnerability IDs to ignore globally (e.g., `["CVE-2024-1234"]`) |
-| `packages.<name>.vulnerabilities` | Vulnerability IDs to ignore for a specific package                        |
-| `packages.<name>.until`           | Expiration date (ISO 8601) for temporary ignores                          |
-| `packages.<name>.reason`          | Documentation of why the vulnerability is ignored                         |
 
 **Example: Global ignore**
 
@@ -138,17 +115,6 @@ When using `both`, advisories are deduplicated by package when they share IDs or
 
 Ignore rules are matched against both advisory IDs and aliases, so you can ignore either the CVE or GHSA identifier for the same issue.
 
-## How It Works
-
-### Security Scanning Process
-
-1. **Package Detection**: Bun provides package information during installation
-2. **Smart Deduplication**: Eliminates duplicate package@version queries
-3. **Batch Querying**: Uses OSV.dev's efficient `/querybatch` endpoint
-4. **Vulnerability Matching**: Precisely matches vulnerabilities to installed versions
-5. **Severity Assessment**: Analyzes CVSS scores and database-specific severity
-6. **Advisory Generation**: Creates actionable security advisories
-
 ### Advisory Levels
 
 The scanner generates two types of security advisories:
@@ -168,15 +134,6 @@ The scanner generates two types of security advisories:
 - **TTY**: Interactive choice presented
 - **Non-TTY**: Installation automatically cancelled
 - **Examples**: Denial of service, information disclosure, deprecation warnings
-
-### Error Handling Philosophy
-
-The scanner follows a **fail-safe** approach:
-
-- Network errors don't block installations
-- Malformed responses are logged but don't halt the process
-- Scanner crashes return empty advisory arrays (allows installation)
-- Only genuine security threats should prevent package installation
 
 ## Usage Examples
 
@@ -219,26 +176,18 @@ The scanner is built with a modular, production-ready architecture:
 ```
 src/
 ├── index.ts              # Main scanner implementation
-├── client.ts             # OSV.dev API client with batch support
-├── processor.ts          # Vulnerability processing and advisory generation
 ├── config.ts             # Ignore configuration loading and validation
 ├── cli.ts                # CLI interface for testing
-├── schema.ts             # Zod schemas for OSV API responses
 ├── constants.ts          # Centralized configuration management
 ├── logger.ts             # Structured logging with configurable levels
 ├── retry.ts              # Robust retry logic with exponential backoff
-├── semver.ts             # OSV semver range matching
-├── severity.ts           # CVSS and severity assessment
+├── sources/              # Vulnerability source integrations
+│   ├── factory.ts        # Source selection and configuration
+│   ├── multi.ts          # Multi-source aggregation and deduping
+│   ├── osv/              # OSV.dev source implementation
+│   └── npm/              # npm advisory source implementation
 └── types.ts              # TypeScript type definitions
 ```
-
-### Key Design Principles
-
-1. **Separation of Concerns**: Each module has a single, well-defined responsibility
-2. **Error Isolation**: Failures in one component don't cascade to others
-3. **Performance Optimization**: Batch processing, deduplication, and concurrent requests
-4. **Observability**: Comprehensive logging for debugging and monitoring
-5. **Type Safety**: Full TypeScript coverage with runtime validation
 
 ## Testing
 
@@ -256,38 +205,7 @@ bun run typecheck
 bun run lint
 ```
 
-### Test Coverage
-
-- Known vulnerable packages detection
-- Safe package verification
-- Multiple package scenarios
-- Version-specific vulnerability matching
-- Network failure handling
-- Edge cases and error conditions
-
-## Development
-
-### Building from Source
-
-```bash
-git clone https://github.com/rawtoast/bun-scan.git
-cd bun-scan
-bun install
-bun run build
-```
-
-## API Reference
-
-### OSV.dev Integration
-
-This scanner integrates with the following OSV.dev endpoints:
-
-- **POST /v1/querybatch**: Batch vulnerability queries for multiple packages
-- **POST /v1/query**: Individual package queries with pagination support
-
-For complete OSV.dev API documentation, visit: https://google.github.io/osv.dev/api/
-
-### Configuration Reference
+## Configuration Reference
 
 | Environment Variable | Default                  | Description                                    |
 | -------------------- | ------------------------ | ---------------------------------------------- |
@@ -316,8 +234,8 @@ For complete OSV.dev API documentation, visit: https://google.github.io/osv.dev/
 
 - OSV.dev data is authoritative - verify vulnerabilities manually
 - Check if you're using an outdated package version
-- Use `.osvignore.json` to ignore vulnerabilities that don't apply to your project
-- Report false positives to the OSV.dev project
+- Use `.bun-scan.json` to ignore vulnerabilities that don't apply to your project
+- Report false positives to the providers
 
 ### Debug Mode
 

@@ -239,6 +239,31 @@ describe("AdvisoryProcessor ignore configuration", () => {
     expect(result).toHaveLength(0)
   })
 
+  test("ignores package-specific vulnerabilities by GHSA URL", () => {
+    const processor = new AdvisoryProcessor({
+      packages: {
+        "test-pkg": {
+          vulnerabilities: ["GHSA-3vhc-576x-3qv4"],
+          reason: "Not affected in our usage",
+        },
+      },
+    })
+    const advisories = [
+      {
+        id: 1112134,
+        title: "Test advisory",
+        severity: "high",
+        vulnerable_versions: "<4.11.4",
+        url: "https://github.com/advisories/GHSA-3vhc-576x-3qv4",
+        name: "test-pkg",
+      },
+    ]
+    const packages = [makePackage("test-pkg", "4.11.0")]
+
+    const result = processor.processAdvisories(advisories as any, packages)
+    expect(result).toHaveLength(0)
+  })
+
   test("does not ignore non-matching advisories", () => {
     const processor = new AdvisoryProcessor({ ignore: ["CVE-9999-9999"] })
     const advisories = [

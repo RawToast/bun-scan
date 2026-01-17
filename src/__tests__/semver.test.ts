@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import { isPackageAffected } from "~/semver"
-import type { OSVAffected } from "~/schema"
+import { isPackageAffected } from "~/sources/osv/semver.js"
+import type { OSVAffected } from "~/sources/osv/schema.js"
 
 describe("Semver Matching", () => {
   describe("Package Name Matching", () => {

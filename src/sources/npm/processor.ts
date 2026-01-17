@@ -57,10 +57,22 @@ export class AdvisoryProcessor {
    * Build aliases from CVEs and GHSA ID for deduplication
    */
   private buildAliases(advisory: NpmAdvisory): string[] {
-    return [
+    const aliases = new Set<string>([
       ...(advisory.cves ?? []),
       ...(advisory.github_advisory_id ? [advisory.github_advisory_id] : []),
-    ]
+    ])
+
+    const ghsaFromUrl = this.extractGhsaFromUrl(advisory.url)
+    if (ghsaFromUrl) {
+      aliases.add(ghsaFromUrl)
+    }
+
+    return Array.from(aliases)
+  }
+
+  private extractGhsaFromUrl(url: string): string | null {
+    const match = url.match(/GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}/i)
+    return match ? match[0] : null
   }
 
   /**

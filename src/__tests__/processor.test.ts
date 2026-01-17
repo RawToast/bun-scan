@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test"
-import { VulnerabilityProcessor } from "~/processor"
-import type { OSVVulnerability } from "~/schema"
+import { VulnerabilityProcessor } from "~/sources/osv/processor.js"
+import type { OSVVulnerability } from "~/sources/osv/schema.js"
 
 describe("Vulnerability Processor", () => {
   let processor: VulnerabilityProcessor
@@ -236,8 +236,8 @@ describe("Vulnerability Processor", () => {
       const result = processor.processVulnerabilities(vulns, packages)
 
       expect(result.length).toBe(2)
-      expect(result.find((r) => r.package === "lodash")).toBeDefined()
-      expect(result.find((r) => r.package === "axios")).toBeDefined()
+      expect(result.find((r: Bun.Security.Advisory) => r.package === "lodash")).toBeDefined()
+      expect(result.find((r: Bun.Security.Advisory) => r.package === "axios")).toBeDefined()
     })
   })
 
