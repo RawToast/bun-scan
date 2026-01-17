@@ -80,10 +80,25 @@ jobs:
       - name: Package verification
         run: bun pm pack --dry-run
 
+      - name: Determine npm tag
+        id: npm-tag
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$VERSION" == *"-alpha"* ]]; then
+            echo "tag=alpha" >> "$GITHUB_OUTPUT"
+          elif [[ "$VERSION" == *"-beta"* ]]; then
+            echo "tag=beta" >> "$GITHUB_OUTPUT"
+          elif [[ "$VERSION" == *"-rc"* ]]; then
+            echo "tag=rc" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Publishing $VERSION with tag: $(grep tag= "$GITHUB_OUTPUT" | cut -d= -f2)"
+
       - name: Publish (dry-run)
         if: github.event_name == 'workflow_dispatch' && inputs.publish != 'true'
-        run: npm publish --access public --dry-run
+        run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }} --dry-run
 
       - name: Publish
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
-        run: npm publish --access public
+        run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
