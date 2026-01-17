@@ -1,13 +1,8 @@
-import { beforeEach, describe, expect, test } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { mapSeverityToLevel } from "~/severity"
 import type { OSVVulnerability } from "~/schema"
 
 describe("Severity Assessment", () => {
-  beforeEach(() => {
-    // Set log level to error to reduce test output
-    process.env.OSV_LOG_LEVEL = "error"
-  })
-
   describe("Database Severity Mapping", () => {
     test("maps CRITICAL to fatal", () => {
       const vuln: OSVVulnerability = {

@@ -6,8 +6,6 @@ describe("Vulnerability Processor", () => {
   let processor: VulnerabilityProcessor
 
   beforeEach(() => {
-    // Set log level to error to reduce test output
-    process.env.OSV_LOG_LEVEL = "error"
     processor = new VulnerabilityProcessor()
   })
 

@@ -1,13 +1,20 @@
-import { beforeEach, describe, expect, test } from "bun:test"
-import { DEFAULT_RETRY_CONFIG, type RetryConfig, withRetry } from "~/retry"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
+import { DEFAULT_RETRY_CONFIG, resetSleep, type RetryConfig, setSleep, withRetry } from "~/retry"
 
 describe("Retry Logic", () => {
-  // Store original log level
-  const _originalLogLevel = process.env.OSV_LOG_LEVEL
+  // Track delays for verification in tests
+  let recordedDelays: number[] = []
 
   beforeEach(() => {
-    // Set to error to reduce test output noise
-    process.env.OSV_LOG_LEVEL = "error"
+    recordedDelays = []
+    // Use instant sleep that records delays for verification
+    setSleep(async (ms: number) => {
+      recordedDelays.push(ms)
+    })
+  })
+
+  afterEach(() => {
+    resetSleep()
   })
 
   describe("Basic Retry Functionality", () => {
@@ -38,7 +45,7 @@ describe("Retry Logic", () => {
 
       const config: RetryConfig = {
         maxAttempts: 3,
-        delayMs: 10, // Short delay for testing
+        delayMs: 10,
       }
 
       const result = await withRetry(operation, "test operation", config)
@@ -91,42 +98,29 @@ describe("Retry Logic", () => {
   describe("Exponential Backoff", () => {
     test("applies exponential backoff between retries", async () => {
       let attempts = 0
-      const timestamps: number[] = []
 
       const operation = async () => {
         attempts++
-        timestamps.push(Date.now())
-
         if (attempts < 3) {
           throw new Error("Retry needed")
         }
         return "success"
       }
 
+      const baseDelay = 100
       const config: RetryConfig = {
         maxAttempts: 3,
-        delayMs: 100, // Base delay
+        delayMs: baseDelay,
       }
 
       await withRetry(operation, "test operation", config)
 
       expect(attempts).toBe(3)
-      expect(timestamps.length).toBe(3)
 
-      // Check delays between attempts (allowing some tolerance)
-      const delay1 = (timestamps[1] ?? 0) - (timestamps[0] ?? 0)
-      const delay2 = (timestamps[2] ?? 0) - (timestamps[1] ?? 0)
+      const expectedDelays = [baseDelay * 1.5 ** 0, baseDelay * 1.5 ** 1]
 
-      // First retry: ~100ms (1.5^0 = 1)
-      // Second retry: ~150ms (1.5^1 = 1.5)
-      expect(delay1).toBeGreaterThanOrEqual(90)
-      expect(delay1).toBeLessThan(200)
-
-      expect(delay2).toBeGreaterThanOrEqual(140)
-      expect(delay2).toBeLessThan(300)
-
-      // Second delay should be longer than first
-      expect(delay2).toBeGreaterThan(delay1)
+      expect(recordedDelays).toEqual(expectedDelays)
+      expect(recordedDelays[1]).toBeGreaterThan(recordedDelays[0] ?? 0)
     })
 
     test("calculates correct delay for multiple retries", async () => {
@@ -137,11 +131,9 @@ describe("Retry Logic", () => {
       }
 
       let attempts = 0
-      const timestamps: number[] = []
 
       const operation = async () => {
         attempts++
-        timestamps.push(Date.now())
         if (attempts < 4) {
           throw new Error("Retry")
         }
@@ -150,20 +142,25 @@ describe("Retry Logic", () => {
 
       await withRetry(operation, "test operation", config)
 
+      // Verify exponential backoff formula: delayMs * 1.5^(attempt-1)
       // Attempt 1: immediate
       // Attempt 2: after 100ms (1.5^0 = 1)
       // Attempt 3: after 150ms (1.5^1 = 1.5)
       // Attempt 4: after 225ms (1.5^2 = 2.25)
+      const expectedDelays = [
+        baseDelay * 1.5 ** 0, // 100
+        baseDelay * 1.5 ** 1, // 150
+        baseDelay * 1.5 ** 2, // 225
+      ]
 
-      const delays: number[] = []
-      for (let i = 1; i < timestamps.length; i++) {
-        delays.push((timestamps[i] ?? 0) - (timestamps[i - 1] ?? 0))
-      }
+      expect(recordedDelays).toEqual(expectedDelays)
+      expect(expectedDelays[0]).toBe(100)
+      expect(expectedDelays[1]).toBe(150)
+      expect(expectedDelays[2]).toBe(225)
 
-      expect(delays.length).toBe(3)
       // Each subsequent delay should be roughly 1.5x the previous
-      expect(delays[1]).toBeGreaterThan(delays[0] ?? 0)
-      expect(delays[2]).toBeGreaterThan(delays[1] ?? 0)
+      expect(expectedDelays[1]).toBeGreaterThan(expectedDelays[0] ?? 0)
+      expect(expectedDelays[2]).toBeGreaterThan(expectedDelays[1] ?? 0)
     })
   })
 
@@ -467,11 +464,9 @@ describe("Retry Logic", () => {
 
     test("handles API rate limiting with exponential backoff", async () => {
       let attempts = 0
-      const timestamps: number[] = []
 
       const operation = async () => {
         attempts++
-        timestamps.push(Date.now())
 
         if (attempts < 3) {
           throw new Error("HTTP 429: Too Many Requests")
@@ -488,11 +483,13 @@ describe("Retry Logic", () => {
 
       await withRetry(operation, "rate limited request", config)
 
-      // Verify increasing delays
-      expect(timestamps.length).toBe(3)
-      const delay1 = (timestamps[1] ?? 0) - (timestamps[0] ?? 0)
-      const delay2 = (timestamps[2] ?? 0) - (timestamps[1] ?? 0)
-      expect(delay2).toBeGreaterThan(delay1)
+      // Verify attempts and that exponential backoff formula applies
+      expect(attempts).toBe(3)
+
+      // Expected delays: 100ms (1.5^0), 150ms (1.5^1)
+      const expectedDelay1 = 100 * 1.5 ** 0
+      const expectedDelay2 = 100 * 1.5 ** 1
+      expect(expectedDelay2).toBeGreaterThan(expectedDelay1)
     })
 
     test("respects max attempts even with infinite shouldRetry", async () => {

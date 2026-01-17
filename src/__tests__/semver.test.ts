@@ -1,13 +1,8 @@
-import { beforeEach, describe, expect, test } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { isPackageAffected } from "~/semver"
 import type { OSVAffected } from "~/schema"
 
 describe("Semver Matching", () => {
-  beforeEach(() => {
-    // Set log level to error to reduce test output
-    process.env.OSV_LOG_LEVEL = "error"
-  })
-
   describe("Package Name Matching", () => {
     test("returns false when package names don't match", () => {
       const pkg: Bun.Security.Package = {

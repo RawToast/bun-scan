@@ -27,6 +27,41 @@ export type IgnoreConfig = z.infer<typeof IgnoreConfigSchema>
 export type IgnorePackageRule = z.infer<typeof IgnorePackageRuleSchema>
 
 /**
+ * Compiled package rule with Set for O(1) vulnerability lookups
+ */
+export type CompiledPackageRule = {
+  vulnerabilitiesSet: Set<string>
+  until?: string
+  reason?: string
+}
+
+/**
+ * Compiled ignore config with Sets for O(1) lookups (Issue 2 optimization)
+ */
+export type CompiledIgnoreConfig = {
+  ignoreSet: Set<string>
+  packages: Map<string, CompiledPackageRule>
+}
+
+/**
+ * Compile an IgnoreConfig into a CompiledIgnoreConfig with Set-based lookups
+ */
+export function compileIgnoreConfig(config: IgnoreConfig): CompiledIgnoreConfig {
+  const ignoreSet = new Set(config.ignore ?? [])
+  const packages = new Map<string, CompiledPackageRule>()
+
+  for (const [name, rule] of Object.entries(config.packages ?? {})) {
+    packages.set(name, {
+      vulnerabilitiesSet: new Set(rule.vulnerabilities ?? []),
+      until: rule.until,
+      reason: rule.reason,
+    })
+  }
+
+  return { ignoreSet, packages }
+}
+
+/**
  * Default config file names to search for (in order of priority)
  */
 const CONFIG_FILES = [".bun-scan.json", ".bun-scan.config.json"] as const
@@ -96,43 +131,41 @@ function logIgnoreStats(config: IgnoreConfig): void {
 }
 
 /**
- * Check if a vulnerability should be ignored based on the config
+ * Check if a vulnerability should be ignored based on the compiled config
+ * Uses Set.has() for O(1) lookups instead of Array.includes() O(n)
  */
 export function shouldIgnoreVulnerability(
   vulnId: string,
   vulnAliases: string[] | undefined,
   packageName: string | undefined,
-  config: IgnoreConfig,
+  config: CompiledIgnoreConfig,
 ): { ignored: boolean; reason?: string } {
   // Get all IDs to check (primary ID + aliases)
   const idsToCheck = [vulnId, ...(vulnAliases ?? [])]
 
-  // Check global ignores
-  if (config.ignore) {
-    for (const id of idsToCheck) {
-      if (config.ignore.includes(id)) {
-        return { ignored: true, reason: `globally ignored (${id})` }
-      }
+  // Check global ignores (O(1) Set lookup)
+  for (const id of idsToCheck) {
+    if (config.ignoreSet.has(id)) {
+      return { ignored: true, reason: `globally ignored (${id})` }
     }
   }
 
   // Check package-specific ignores
-  if (packageName && config.packages?.[packageName]) {
-    const rule = config.packages[packageName]
-
-    // Check if the ignore has expired
-    if (rule.until) {
-      const untilDate = new Date(rule.until)
-      if (untilDate < new Date()) {
-        logger.debug(`Ignore rule for ${packageName} expired on ${rule.until}`)
-        return { ignored: false }
+  if (packageName) {
+    const rule = config.packages.get(packageName)
+    if (rule) {
+      // Check if the ignore has expired
+      if (rule.until) {
+        const untilDate = new Date(rule.until)
+        if (untilDate < new Date()) {
+          logger.debug(`Ignore rule for ${packageName} expired on ${rule.until}`)
+          return { ignored: false }
+        }
       }
-    }
 
-    // Check package-specific vulnerability ignores
-    if (rule.vulnerabilities) {
+      // Check package-specific vulnerability ignores (O(1) Set lookup)
       for (const id of idsToCheck) {
-        if (rule.vulnerabilities.includes(id)) {
+        if (rule.vulnerabilitiesSet.has(id)) {
           const reason = rule.reason
             ? `package rule: ${rule.reason}`
             : `ignored for ${packageName} (${id})`
