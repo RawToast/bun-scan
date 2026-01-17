@@ -98,14 +98,6 @@ export async function loadConfig(): Promise<Config> {
 }
 
 /**
- * Load ignore configuration from the current working directory
- * @deprecated Use loadConfig() instead
- */
-export async function loadIgnoreConfig(): Promise<IgnoreConfig> {
-  return loadConfig()
-}
-
-/**
  * Try to load and parse a config file
  */
 async function tryLoadConfigFile(filename: string): Promise<Config | null> {

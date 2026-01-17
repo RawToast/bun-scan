@@ -56,5 +56,11 @@ describe("Config", () => {
       expect(config.source).toBe("osv")
       expect(config.ignore).toEqual(["CVE-2024-1234"])
     })
+
+    test("returns ignore config without source field", async () => {
+      await writeConfigFile({ source: "npm", ignore: ["CVE-2024-1234"] })
+      const { ignore } = await loadConfig()
+      expect(ignore).toEqual(["CVE-2024-1234"])
+    })
   })
 })
