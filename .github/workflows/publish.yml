@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
 
       - name: Verify release tag matches package.json version
@@ -82,8 +82,8 @@ jobs:
 
       - name: Publish (dry-run)
         if: github.event_name == 'workflow_dispatch' && inputs.publish != 'true'
-        run: npm publish --provenance --access public --dry-run
+        run: npm publish --access public --dry-run
 
       - name: Publish
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
-        run: npm publish --provenance --access public
+        run: npm publish --access public
