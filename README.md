@@ -1,6 +1,6 @@
 # Bun-Scan
 
-A production-grade security scanner for [Bun](https://bun.sh/) that integrates with [OSV.dev](https://osv.dev/) (Open Source Vulnerabilities) to detect known vulnerabilities in packages during installation.
+A security scanner for [Bun](https://bun.sh/) that checks packages for known vulnerabilities during installation.
 
 [![npm version](https://img.shields.io/npm/v/bun-scan?color=dc2626)](https://npmjs.com/package/bun-scan)
 [![npm downloads](https://img.shields.io/npm/dm/bun-scan?color=dc2626)](https://npmjs.com/package/bun-scan)
@@ -8,14 +8,12 @@ A production-grade security scanner for [Bun](https://bun.sh/) that integrates w
 
 ## Features
 
-- **Real-time Scanning**: Checks packages against OSV.dev during installation
-- **High Performance**: Efficient batch queries with smart deduplication
-- **Fail-safe**: Never blocks installations due to scanner errors
-- **Configurable**: Configuration for all settings
+- **Real-time Scanning**: Checks packages against configured sources (OSV, npm, or both) during installation
+- **Batch Queries**: Efficient batch queries with deduplication
+- **Fail-safe**: Does not block installations when the scanner fails
+- **Configurable**: Supports config files and environment variables
 
 ## Installation
-
-**No API keys or registration required** - completely free to use with zero setup beyond installation.
 
 ```bash
 # Install as a dev dependency
@@ -111,52 +109,29 @@ Using `both` provides maximum coverage but takes longer as it queries two APIs.
 
 #### Dedupe and Ignore Behavior
 
-When using `both`, advisories are deduplicated by package when they share IDs or aliases (CVE or GHSA). For example, the same vulnerability might be reported as `GHSA-xxxx` from OSV and as `1234567` from npm, but both share `CVE-2024-xxxx` - bun-scan will recognize these as the same vulnerability.
-
-Ignore rules are matched against both advisory IDs and aliases, so you can ignore either the CVE or GHSA identifier for the same issue.
+When using `both`, advisories are deduplicated by package when they share IDs or aliases (CVE or GHSA). Ignore rules are matched against both advisory IDs and aliases.
 
 ### Advisory Levels
-
-The scanner generates two types of security advisories:
 
 #### Fatal (Installation Blocked)
 
 - **CVSS Score**: ≥ 7.0 (High/Critical)
 - **Database Severity**: CRITICAL or HIGH
 - **Action**: Installation is immediately blocked
-- **Examples**: Remote code execution, privilege escalation, data exposure
 
 #### Warning (User Prompted)
 
 - **CVSS Score**: < 7.0 (Medium/Low)
 - **Database Severity**: MEDIUM, LOW, or unspecified
 - **Action**: User is prompted to continue or cancel
-- **TTY**: Interactive choice presented
-- **Non-TTY**: Installation automatically cancelled
-- **Examples**: Denial of service, information disclosure, deprecation warnings
 
 ## Usage Examples
-
-### Basic Usage
 
 ```bash
 # Scanner runs automatically during installation
 bun install express
-# -> Checks express and all dependencies for vulnerabilities
 
 bun add lodash@4.17.20
-# -> May warn about known lodash vulnerabilities in older versions
-```
-
-### Development Usage
-
-```bash
-# Enable debug logging to see detailed scanning information
-BUN_SCAN_LOG_LEVEL=debug bun install
-
-# Test with a known vulnerable package
-bun add event-stream@3.3.6
-# -> Should trigger security advisory
 ```
 
 ### Configuration Examples
@@ -165,13 +140,13 @@ bun add event-stream@3.3.6
 # Increase timeout for slow networks
 OSV_TIMEOUT_MS=60000 bun install
 
-# Use custom OSV instance (advanced)
+# Use custom OSV instance
 OSV_API_BASE_URL=https://api.custom-osv.dev/v1 bun install
 ```
 
 ## Architecture
 
-The scanner is built with a modular, production-ready architecture:
+The scanner is built with a modular architecture:
 
 ```
 src/
@@ -228,29 +203,11 @@ bun run lint
 
 - Increase timeout: `OSV_TIMEOUT_MS=60000`
 - Check internet connectivity to osv.dev
-- Consider corporate firewall restrictions
 
 **Too many false positives?**
 
-- OSV.dev data is authoritative - verify vulnerabilities manually
 - Check if you're using an outdated package version
 - Use `.bun-scan.json` to ignore vulnerabilities that don't apply to your project
-- Report false positives to the providers
-
-### Debug Mode
-
-Enable comprehensive debug output:
-
-```bash
-BUN_SCAN_LOG_LEVEL=debug bun install your-package
-```
-
-This shows:
-
-- Package deduplication statistics
-- API request/response details
-- Vulnerability matching decisions
-- Performance timing information
 
 ## License
 
@@ -258,12 +215,12 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- **OSV.dev Team**: For maintaining the comprehensive vulnerability database
-- **Bun Team**: For the innovative Security Scanner API
 - **maloma7**: For the original implementation of the Bun OSV Scanner
 
 ## Related Projects
 
 - [Bun Security Scanner API](https://bun.com/docs/install/security-scanner-api)
-- [OSV.dev](https://osv.dev/) - Open Source Vulnerabilities database
+- [OSV.dev](https://osv.dev/)
+- [Github advisories](https://github.com/advisories)
 - [Bun OSV Scanner](https://github.com/bun-security-scanner/osv)
+- [Bun NPM Scanner](https://github.com/bun-security-scanner/npm)
