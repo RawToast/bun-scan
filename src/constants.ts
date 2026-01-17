@@ -75,7 +75,7 @@ export const PERFORMANCE = {
  */
 export const ENV = {
   /** Log level environment variable */
-  LOG_LEVEL: "OSV_LOG_LEVEL",
+  LOG_LEVEL: "BUN_SCAN_LOG_LEVEL",
 
   /** Custom API base URL override */
   API_BASE_URL: "OSV_API_BASE_URL",

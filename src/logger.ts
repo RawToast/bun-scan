@@ -72,5 +72,5 @@ export function createLogger(level?: LogLevel): Logger {
   }
 }
 
-/** Default logger - reads OSV_LOG_LEVEL once at module load */
+/** Default logger - reads BUN_SCAN_LOG_LEVEL once at module load */
 export const logger = createLogger()

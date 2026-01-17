@@ -102,7 +102,7 @@ The scanner can be configured via environment variables:
 
 ```bash
 # Logging level (debug, info, warn, error)
-export OSV_LOG_LEVEL=info
+export BUN_SCAN_LOG_LEVEL=info
 
 # Custom OSV API base URL (optional)
 export OSV_API_BASE_URL=https://api.osv.dev/v1
@@ -171,7 +171,7 @@ bun add lodash@4.17.20
 
 ```bash
 # Enable debug logging to see detailed scanning information
-OSV_LOG_LEVEL=debug bun install
+BUN_SCAN_LOG_LEVEL=debug bun install
 
 # Test with a known vulnerable package
 bun add event-stream@3.3.6
@@ -267,7 +267,7 @@ For complete OSV.dev API documentation, visit: https://google.github.io/osv.dev/
 
 | Environment Variable | Default                  | Description                                    |
 | -------------------- | ------------------------ | ---------------------------------------------- |
-| `OSV_LOG_LEVEL`      | `info`                   | Logging level: debug, info, warn, error        |
+| `BUN_SCAN_LOG_LEVEL` | `info`                   | Logging level: debug, info, warn, error        |
 | `OSV_API_BASE_URL`   | `https://api.osv.dev/v1` | OSV API base URL                               |
 | `OSV_TIMEOUT_MS`     | `30000`                  | Request timeout in milliseconds                |
 | `OSV_DISABLE_BATCH`  | `false`                  | Disable batch queries (use individual queries) |
@@ -280,7 +280,7 @@ For complete OSV.dev API documentation, visit: https://google.github.io/osv.dev/
 
 - Verify `bunfig.toml` configuration
 - Check that the package is installed as a dev dependency
-- Enable debug logging: `OSV_LOG_LEVEL=debug bun install`
+- Enable debug logging: `BUN_SCAN_LOG_LEVEL=debug bun install`
 
 **Network timeouts?**
 
@@ -300,7 +300,7 @@ For complete OSV.dev API documentation, visit: https://google.github.io/osv.dev/
 Enable comprehensive debug output:
 
 ```bash
-OSV_LOG_LEVEL=debug bun install your-package
+BUN_SCAN_LOG_LEVEL=debug bun install your-package
 ```
 
 This shows:

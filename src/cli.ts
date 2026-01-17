@@ -25,9 +25,9 @@ Examples:
   bun run src/cli.ts scan ./package.json
 
 Environment Variables:
-  OSV_LOG_LEVEL     Set logging level (debug, info, warn, error)
-  OSV_TIMEOUT_MS    Set request timeout in milliseconds
-  OSV_DISABLE_BATCH Disable batch queries (true/false)
+  BUN_SCAN_LOG_LEVEL  Set logging level (debug, info, warn, error)
+  OSV_TIMEOUT_MS      Set request timeout in milliseconds
+  OSV_DISABLE_BATCH   Disable batch queries (true/false)
 `)
 }
 
