@@ -88,7 +88,7 @@ body:
 
         Environment variables:
         ```bash
-        OSV_LOG_LEVEL=debug
+        BUN_SCAN_LOG_LEVEL=debug
         ```
       render: markdown
 
@@ -97,7 +97,7 @@ body:
     attributes:
       label: Debug Logs
       description: |
-        Run with `OSV_LOG_LEVEL=debug` and include relevant log output.
+        Run with `BUN_SCAN_LOG_LEVEL=debug` and include relevant log output.
         Please redact any sensitive information.
       placeholder: |
         ```

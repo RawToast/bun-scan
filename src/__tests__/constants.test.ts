@@ -112,8 +112,12 @@ describe("Constants", () => {
   })
 
   describe("ENV Constants", () => {
+    test("uses BUN_SCAN_LOG_LEVEL env var", () => {
+      expect(ENV.LOG_LEVEL).toBe("BUN_SCAN_LOG_LEVEL")
+    })
+
     test("has correct environment variable names", () => {
-      expect(ENV.LOG_LEVEL).toBe("OSV_LOG_LEVEL")
+      expect(ENV.LOG_LEVEL).toBe("BUN_SCAN_LOG_LEVEL")
       expect(ENV.API_BASE_URL).toBe("OSV_API_BASE_URL")
       expect(ENV.TIMEOUT_MS).toBe("OSV_TIMEOUT_MS")
       expect(ENV.DISABLE_BATCH).toBe("OSV_DISABLE_BATCH")

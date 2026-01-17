@@ -1,22 +1,21 @@
 /**
- * Centralized configuration constants for OSV Scanner
- * All magic numbers and configuration values consolidated here
+ * Centralized configuration constants for npm source
  */
 
 import type { FatalSeverity } from "./types.js"
 
 /**
- * OSV API Configuration
+ * npm Audit API Configuration
  */
-export const OSV_API = {
-  /** Base URL for OSV API */
-  BASE_URL: "https://api.osv.dev/v1",
+export const NPM_AUDIT_API = {
+  /** Base URL for npm registry */
+  REGISTRY_URL: "https://registry.npmjs.org",
+
+  /** Bulk advisory endpoint path */
+  BULK_ADVISORY_PATH: "/-/npm/v1/security/advisories/bulk",
 
   /** Request timeout in milliseconds */
   TIMEOUT_MS: 30_000,
-
-  /** Maximum packages per batch query */
-  MAX_BATCH_SIZE: 1_000,
 
   /** Maximum retry attempts for failed requests */
   MAX_RETRY_ATTEMPTS: 2,
@@ -24,8 +23,8 @@ export const OSV_API = {
   /** Delay between retry attempts in milliseconds */
   RETRY_DELAY_MS: 1_000,
 
-  /** Default ecosystem for npm packages */
-  DEFAULT_ECOSYSTEM: "npm",
+  /** Maximum packages per request (npm accepts all at once, but we limit for safety) */
+  MAX_PACKAGES_PER_REQUEST: 1_000,
 } as const
 
 /**
@@ -35,8 +34,11 @@ export const HTTP = {
   /** Content type for API requests */
   CONTENT_TYPE: "application/json",
 
+  /** Content encoding for compressed requests */
+  CONTENT_ENCODING: "gzip",
+
   /** User agent for requests */
-  USER_AGENT: "bun-osv-scanner/1.0.0",
+  USER_AGENT: "@bun-security-scanner/npm/1.0.0",
 } as const
 
 /**
@@ -46,8 +48,8 @@ export const SECURITY = {
   /** CVSS score threshold for fatal advisories */
   CVSS_FATAL_THRESHOLD: 7.0,
 
-  /** Database severities that map to fatal level */
-  FATAL_SEVERITIES: ["CRITICAL", "HIGH"] as const satisfies readonly FatalSeverity[],
+  /** npm severity levels that map to fatal level */
+  FATAL_SEVERITIES: ["critical", "high"] as const satisfies readonly FatalSeverity[],
 
   /** Maximum vulnerabilities to process per package */
   MAX_VULNERABILITIES_PER_PACKAGE: 100,
@@ -57,34 +59,14 @@ export const SECURITY = {
 } as const
 
 /**
- * Performance Configuration
- */
-export const PERFORMANCE = {
-  /** Enable batch queries for better performance */
-  USE_BATCH_QUERIES: true,
-
-  /** Maximum concurrent vulnerability detail requests */
-  MAX_CONCURRENT_DETAILS: 10,
-
-  /** Maximum response size in bytes (32MB) */
-  MAX_RESPONSE_SIZE: 32 * 1024 * 1024,
-} as const
-
-/**
  * Environment variable configuration
  */
 export const ENV = {
-  /** Log level environment variable */
-  LOG_LEVEL: "BUN_SCAN_LOG_LEVEL",
-
-  /** Custom API base URL override */
-  API_BASE_URL: "OSV_API_BASE_URL",
+  /** Custom registry URL override */
+  REGISTRY_URL: "NPM_SCANNER_REGISTRY_URL",
 
   /** Custom timeout override */
-  TIMEOUT_MS: "OSV_TIMEOUT_MS",
-
-  /** Disable batch queries */
-  DISABLE_BATCH: "OSV_DISABLE_BATCH",
+  TIMEOUT_MS: "NPM_SCANNER_TIMEOUT_MS",
 } as const
 
 /**

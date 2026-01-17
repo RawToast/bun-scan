@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import { mapSeverityToLevel } from "~/severity"
-import type { OSVVulnerability } from "~/schema"
+import { mapSeverityToLevel } from "~/sources/osv/severity.js"
+import type { OSVVulnerability } from "~/sources/osv/schema.js"
 
 describe("Severity Assessment", () => {
   describe("Database Severity Mapping", () => {

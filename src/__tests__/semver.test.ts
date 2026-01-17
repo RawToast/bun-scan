@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import { isPackageAffected } from "~/semver"
-import type { OSVAffected } from "~/schema"
+import { isPackageAffected } from "~/sources/osv/semver.js"
+import type { OSVAffected } from "~/sources/osv/schema.js"
 
 describe("Semver Matching", () => {
   describe("Package Name Matching", () => {
@@ -295,9 +295,6 @@ describe("Semver Matching", () => {
 
   describe("Complex Range Events", () => {
     test("handles multiple introduced/fixed pairs", () => {
-      // Note: Current implementation combines all events with AND logic
-      // which doesn't properly handle multiple vulnerability windows
-      // This test documents the current behavior
       const pkg: Bun.Security.Package = {
         name: "package",
         version: "2.5.0",
@@ -322,9 +319,7 @@ describe("Semver Matching", () => {
 
       const result = isPackageAffected(pkg, affected)
 
-      // Current behavior: false (limitation - combines with AND)
-      // Ideal behavior: true (2.5.0 is in second window [2.4.0, 2.6.0))
-      expect(result).toBe(false)
+      expect(result).toBe(true)
     })
 
     test("returns false when version between ranges", () => {

@@ -6,7 +6,7 @@ import {
   OSVQuerySchema,
   OSVResponseSchema,
   OSVVulnerabilitySchema,
-} from "~/schema"
+} from "~/sources/osv/schema.js"
 
 describe("Schema Validation", () => {
   describe("OSVQuerySchema", () => {

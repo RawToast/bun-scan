@@ -1,8 +1,8 @@
 import type { OSVQuery, OSVVulnerability } from "./schema.js"
 import { OSVResponseSchema, OSVBatchResponseSchema, OSVVulnerabilitySchema } from "./schema.js"
-import { OSV_API, HTTP, PERFORMANCE, getConfig, ENV } from "./constants.js"
-import { withRetry } from "./retry.js"
-import { logger } from "./logger.js"
+import { OSV_API, HTTP, PERFORMANCE, getConfig, ENV } from "../../constants.js"
+import { withRetry } from "../../retry.js"
+import { logger } from "../../logger.js"
 
 /**
  * OSV API Client

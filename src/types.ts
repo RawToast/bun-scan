@@ -17,6 +17,8 @@ declare global {
       interface Advisory {
         id: string
         message: string
+        /** Aliases (CVEs, GHSAs) for deduplication across sources */
+        aliases?: string[]
       }
     }
   }

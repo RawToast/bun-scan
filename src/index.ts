@@ -1,42 +1,39 @@
 /// <reference types="bun-types" />
 import "./types.js"
-import { OSVClient } from "./client.js"
-import { VulnerabilityProcessor } from "./processor.js"
+import { loadConfig } from "./config.js"
+import { createSources } from "./sources/factory.js"
+import { MultiSourceScanner } from "./sources/multi.js"
 import { logger } from "./logger.js"
-import { loadIgnoreConfig } from "./config.js"
 
 /**
- * Bun Security Scanner for OSV.dev vulnerability detection
- * Integrates with Google's OSV database to detect vulnerabilities in npm packages
+ * Bun Security Scanner with configurable vulnerability sources
+ * Supports OSV.dev, npm Registry, or both
  */
 export const scanner: Bun.Security.Scanner = {
-  version: "1", // This is the version of Bun security scanner implementation. You should keep this set as '1'
+  version: "1",
 
   async scan({ packages }) {
     try {
-      logger.info(`Starting OSV scan for ${packages.length} packages`)
+      logger.info(`Starting vulnerability scan for ${packages.length} packages`)
 
-      // Load ignore configuration
-      const ignoreConfig = await loadIgnoreConfig()
+      // Load configuration (includes source and ignore rules)
+      const config = await loadConfig()
 
-      // Initialize components
-      const client = new OSVClient()
-      const processor = new VulnerabilityProcessor(ignoreConfig)
+      // Create vulnerability sources based on config
+      const sources = createSources(config.source ?? "osv", config)
 
-      // Fetch vulnerabilities from OSV.dev
-      const vulnerabilities = await client.queryVulnerabilities(packages)
-
-      // Process vulnerabilities into security advisories
-      const advisories = processor.processVulnerabilities(vulnerabilities, packages)
+      // Scan with all configured sources
+      const multiScanner = new MultiSourceScanner(sources)
+      const advisories = await multiScanner.scan(packages)
 
       logger.info(
-        `OSV scan completed: ${advisories.length} advisories found for ${packages.length} packages`,
+        `Scan completed: ${advisories.length} advisories found for ${packages.length} packages`,
       )
 
       return advisories
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      logger.error("OSV scanner encountered an unexpected error", {
+      logger.error("Scanner encountered an unexpected error", {
         error: message,
       })
 

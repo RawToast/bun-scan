@@ -1,14 +1,14 @@
 import type { OSVVulnerability } from "./schema.js"
 import { isPackageAffected } from "./semver.js"
 import { mapSeverityToLevel } from "./severity.js"
-import { SECURITY } from "./constants.js"
-import { logger } from "./logger.js"
+import { SECURITY } from "../../constants.js"
+import { logger } from "../../logger.js"
 import {
   type IgnoreConfig,
   type CompiledIgnoreConfig,
   compileIgnoreConfig,
   shouldIgnoreVulnerability,
-} from "./config.js"
+} from "../../config.js"
 
 /** Hostname regex for URL parsing - avoids expensive new URL() calls */
 const HOSTNAME_REGEX = /^https?:\/\/([^/:?#]+)(?::\d+)?(?:[/?#]|$)/

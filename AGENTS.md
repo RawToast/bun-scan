@@ -203,7 +203,7 @@ import { beforeEach, describe, expect, test } from "bun:test"
 describe("FeatureName", () => {
   beforeEach(() => {
     // Setup, e.g., set log level
-    process.env.OSV_LOG_LEVEL = "error"
+    process.env.BUN_SCAN_LOG_LEVEL = "error"
   })
 
   describe("SubCategory", () => {

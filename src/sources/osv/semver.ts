@@ -1,5 +1,5 @@
 import type { OSVAffected } from "./schema.js"
-import { logger } from "./logger.js"
+import { logger } from "../../logger.js"
 
 /**
  * Check if a package version is affected by an OSV vulnerability
@@ -62,33 +62,46 @@ function isVersionInSemverRange(
   },
 ): boolean {
   try {
-    // Build semver range string from OSV events
-    const rangeExpressions: string[] = []
+    // Build semver range groups from OSV events
+    const rangeGroups: string[] = []
+    let currentGroup: string[] = []
 
     for (const event of range.events) {
       if (event.introduced) {
+        if (currentGroup.length > 0) {
+          rangeGroups.push(currentGroup.join(" "))
+          currentGroup = []
+        }
+
         if (event.introduced === "0") {
-          rangeExpressions.push("*")
+          currentGroup.push("*")
         } else {
-          rangeExpressions.push(`>=${event.introduced}`)
+          currentGroup.push(`>=${event.introduced}`)
         }
       }
 
       if (event.fixed) {
-        rangeExpressions.push(`<${event.fixed}`)
+        currentGroup.push(`<${event.fixed}`)
+        rangeGroups.push(currentGroup.join(" "))
+        currentGroup = []
       }
 
       if (event.last_affected) {
-        rangeExpressions.push(`<=${event.last_affected}`)
+        currentGroup.push(`<=${event.last_affected}`)
+        rangeGroups.push(currentGroup.join(" "))
+        currentGroup = []
       }
     }
 
-    if (rangeExpressions.length === 0) {
+    if (currentGroup.length > 0) {
+      rangeGroups.push(currentGroup.join(" "))
+    }
+
+    if (rangeGroups.length === 0) {
       return false
     }
 
-    // Combine range expressions with AND logic
-    const combinedRange = rangeExpressions.join(" ")
+    const combinedRange = rangeGroups.join(" || ")
 
     logger.debug(`Checking ${version} against range: ${combinedRange}`)
 

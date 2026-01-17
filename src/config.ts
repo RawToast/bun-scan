@@ -1,4 +1,6 @@
 import { z } from "zod"
+import type { SourceType } from "./sources/types.js"
+import { DEFAULT_SOURCE } from "./sources/types.js"
 import { logger } from "./logger.js"
 
 /**
@@ -14,7 +16,7 @@ const IgnorePackageRuleSchema = z.object({
 })
 
 /**
- * Schema for the ignore configuration file
+ * Schema for the ignore configuration file (legacy)
  */
 export const IgnoreConfigSchema = z.object({
   /** Vulnerability IDs to ignore globally (CVE-*, GHSA-*) */
@@ -24,6 +26,20 @@ export const IgnoreConfigSchema = z.object({
 })
 
 export type IgnoreConfig = z.infer<typeof IgnoreConfigSchema>
+
+/**
+ * Schema for the full configuration file including source selection
+ */
+export const ConfigSchema = z.object({
+  /** Vulnerability data source */
+  source: z.enum(["osv", "npm", "both"]).catch(DEFAULT_SOURCE).optional(),
+  /** Vulnerability IDs to ignore globally (CVE-*, GHSA-*) */
+  ignore: z.array(z.string()).optional(),
+  /** Package-specific ignore rules */
+  packages: z.record(z.string(), IgnorePackageRuleSchema).optional(),
+})
+
+export type Config = z.infer<typeof ConfigSchema>
 export type IgnorePackageRule = z.infer<typeof IgnorePackageRuleSchema>
 
 /**
@@ -67,24 +83,24 @@ export function compileIgnoreConfig(config: IgnoreConfig): CompiledIgnoreConfig 
 const CONFIG_FILES = [".bun-scan.json", ".bun-scan.config.json"] as const
 
 /**
- * Load ignore configuration from the current working directory
+ * Load full configuration from the current working directory
  */
-export async function loadIgnoreConfig(): Promise<IgnoreConfig> {
+export async function loadConfig(): Promise<Config> {
   for (const filename of CONFIG_FILES) {
     const config = await tryLoadConfigFile(filename)
     if (config) {
-      return config
+      return { source: DEFAULT_SOURCE, ...config }
     }
   }
 
-  // No config file found - return empty config
-  return {}
+  // No config file found - return default config
+  return { source: DEFAULT_SOURCE }
 }
 
 /**
  * Try to load and parse a config file
  */
-async function tryLoadConfigFile(filename: string): Promise<IgnoreConfig | null> {
+async function tryLoadConfigFile(filename: string): Promise<Config | null> {
   try {
     const file = Bun.file(filename)
     const exists = await file.exists()
@@ -94,15 +110,15 @@ async function tryLoadConfigFile(filename: string): Promise<IgnoreConfig | null>
     }
 
     const content = await file.json()
-    const parsed = IgnoreConfigSchema.parse(content)
+    const parsed = ConfigSchema.parse(content)
 
-    logger.info(`Loaded ignore configuration from ${filename}`)
-    logIgnoreStats(parsed)
+    logger.info(`Loaded configuration from ${filename}`)
+    logConfigStats(parsed)
 
     return parsed
   } catch (error) {
     if (error instanceof z.ZodError) {
-      logger.warn(`Invalid ignore config in ${filename}`, {
+      logger.warn(`Invalid config in ${filename}`, {
         errors: error.issues.map((e) => `${e.path.join(".")}: ${e.message}`),
       })
     } else if (error instanceof SyntaxError) {
@@ -116,14 +132,16 @@ async function tryLoadConfigFile(filename: string): Promise<IgnoreConfig | null>
 }
 
 /**
- * Log statistics about the loaded ignore configuration
+ * Log statistics about the loaded configuration
  */
-function logIgnoreStats(config: IgnoreConfig): void {
+function logConfigStats(config: Config): void {
   const globalIgnores = config.ignore?.length ?? 0
   const packageRules = Object.keys(config.packages ?? {}).length
+  const source = config.source ?? DEFAULT_SOURCE
 
   if (globalIgnores > 0 || packageRules > 0) {
-    logger.info(`Ignore rules loaded`, {
+    logger.info(`Configuration loaded`, {
+      source,
       globalIgnores,
       packageRules,
     })

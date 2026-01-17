@@ -1,7 +1,7 @@
 import type { OSVVulnerability } from "./schema.js"
-import type { FatalSeverity } from "./types.js"
-import { SECURITY } from "./constants.js"
-import { logger } from "./logger.js"
+import type { FatalSeverity } from "../../types.js"
+import { SECURITY } from "../../constants.js"
+import { logger } from "../../logger.js"
 
 /**
  * Map OSV vulnerability data to Bun security advisory level
