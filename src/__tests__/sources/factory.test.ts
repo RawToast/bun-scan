@@ -1,21 +1,19 @@
 import { describe, expect, test } from "bun:test"
 import { createSource, createSources } from "~/sources/factory"
-import { OSVSource } from "~/sources/osv"
-import { NpmSource } from "~/sources/npm"
 
 describe("createSource", () => {
   const emptyConfig = {}
 
   test("creates OSV source for 'osv'", () => {
     const source = createSource("osv", emptyConfig)
-    expect(source).toBeInstanceOf(OSVSource)
     expect(source.name).toBe("osv")
+    expect(typeof source.scan).toBe("function")
   })
 
   test("creates npm source for 'npm'", () => {
     const source = createSource("npm", emptyConfig)
-    expect(source).toBeInstanceOf(NpmSource)
     expect(source.name).toBe("npm")
+    expect(typeof source.scan).toBe("function")
   })
 
   test("throws for invalid source type", () => {

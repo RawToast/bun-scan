@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, test } from "bun:test"
-import { VulnerabilityProcessor } from "~/sources/osv/processor.js"
+import { createVulnerabilityProcessor } from "~/sources/osv/processor.js"
+import type { VulnerabilityProcessor } from "~/sources/osv/processor.js"
 import type { OSVVulnerability } from "~/sources/osv/schema.js"
 
 describe("Vulnerability Processor", () => {
   let processor: VulnerabilityProcessor
 
   beforeEach(() => {
-    processor = new VulnerabilityProcessor()
+    processor = createVulnerabilityProcessor()
   })
 
   describe("Basic Processing", () => {

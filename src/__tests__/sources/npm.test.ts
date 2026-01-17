@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test"
-import { NpmSource } from "~/sources/npm"
+import { createNpmSource } from "~/sources/npm"
 import type { VulnerabilitySource } from "~/sources/types"
 import { NpmAuditResponseSchema } from "~/sources/npm/schema"
-import { AdvisoryProcessor } from "~/sources/npm/processor"
+import { createAdvisoryProcessor } from "~/sources/npm/processor"
 
 describe("NpmSource", () => {
   beforeEach(() => {
@@ -10,13 +10,13 @@ describe("NpmSource", () => {
   })
 
   test("implements VulnerabilitySource interface", () => {
-    const source: VulnerabilitySource = new NpmSource({})
+    const source: VulnerabilitySource = createNpmSource({})
     expect(source.name).toBe("npm")
     expect(typeof source.scan).toBe("function")
   })
 
   test("returns empty array for empty packages", async () => {
-    const source = new NpmSource({})
+    const source = createNpmSource({})
     const result = await source.scan([])
     expect(result).toEqual([])
   })
@@ -158,7 +158,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
   })
 
   test("ignores globally ignored advisories by id", () => {
-    const processor = new AdvisoryProcessor({ ignore: ["1103907"] })
+    const processor = createAdvisoryProcessor({ ignore: ["1103907"] })
     const advisories = [
       {
         id: 1103907,
@@ -176,7 +176,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
   })
 
   test("ignores globally ignored advisories by CVE alias", () => {
-    const processor = new AdvisoryProcessor({ ignore: ["CVE-2024-1234"] })
+    const processor = createAdvisoryProcessor({ ignore: ["CVE-2024-1234"] })
     const advisories = [
       {
         id: 1103907,
@@ -195,7 +195,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
   })
 
   test("ignores globally ignored advisories by GHSA alias", () => {
-    const processor = new AdvisoryProcessor({ ignore: ["GHSA-xxxx-xxxx-xxxx"] })
+    const processor = createAdvisoryProcessor({ ignore: ["GHSA-xxxx-xxxx-xxxx"] })
     const advisories = [
       {
         id: 1103907,
@@ -214,7 +214,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
   })
 
   test("ignores package-specific vulnerabilities", () => {
-    const processor = new AdvisoryProcessor({
+    const processor = createAdvisoryProcessor({
       packages: {
         "test-pkg": {
           vulnerabilities: ["CVE-2024-1234"],
@@ -240,7 +240,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
   })
 
   test("ignores package-specific vulnerabilities by GHSA URL", () => {
-    const processor = new AdvisoryProcessor({
+    const processor = createAdvisoryProcessor({
       packages: {
         "test-pkg": {
           vulnerabilities: ["GHSA-3vhc-576x-3qv4"],
@@ -265,7 +265,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
   })
 
   test("does not ignore non-matching advisories", () => {
-    const processor = new AdvisoryProcessor({ ignore: ["CVE-9999-9999"] })
+    const processor = createAdvisoryProcessor({ ignore: ["CVE-9999-9999"] })
     const advisories = [
       {
         id: 1103907,
@@ -284,7 +284,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
   })
 
   test("includes aliases in returned advisory", () => {
-    const processor = new AdvisoryProcessor({})
+    const processor = createAdvisoryProcessor({})
     const advisories = [
       {
         id: 1103907,
@@ -305,7 +305,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
   })
 
   test("handles advisory with no aliases", () => {
-    const processor = new AdvisoryProcessor({})
+    const processor = createAdvisoryProcessor({})
     const advisories = [
       {
         id: 1103907,

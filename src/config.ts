@@ -1,5 +1,4 @@
 import { z } from "zod"
-import type { SourceType } from "./sources/types.js"
 import { DEFAULT_SOURCE } from "./sources/types.js"
 import { logger } from "./logger.js"
 

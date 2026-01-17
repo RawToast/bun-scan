@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { MultiSourceScanner } from "~/sources/multi"
+import { createMultiSourceScanner } from "~/sources/multi"
 import type { VulnerabilitySource } from "~/sources/types"
 
 const makeAdvisory = (
@@ -30,7 +30,7 @@ describe("MultiSourceScanner", () => {
       },
     }
 
-    const scanner = new MultiSourceScanner([mockSource])
+    const scanner = createMultiSourceScanner([mockSource])
     const results = await scanner.scan([makePackage("test-pkg", "1.0.0")])
 
     expect(results).toHaveLength(1)
@@ -58,7 +58,7 @@ describe("MultiSourceScanner", () => {
       },
     }
 
-    const scanner = new MultiSourceScanner([source1, source2])
+    const scanner = createMultiSourceScanner([source1, source2])
     const results = await scanner.scan([makePackage("pkg", "1.0.0")])
 
     // Should have 3 unique vulnerabilities (CVE-1/GHSA deduplicated)
@@ -90,7 +90,7 @@ describe("MultiSourceScanner", () => {
       },
     }
 
-    const scanner = new MultiSourceScanner([slowSource, fastSource])
+    const scanner = createMultiSourceScanner([slowSource, fastSource])
     await scanner.scan([])
 
     expect(fastDone).toBe(true)
@@ -98,7 +98,7 @@ describe("MultiSourceScanner", () => {
   })
 
   test("throws if no sources provided", () => {
-    expect(() => new MultiSourceScanner([])).toThrow()
+    expect(() => createMultiSourceScanner([])).toThrow()
   })
 
   test("handles source failures gracefully", async () => {
@@ -116,7 +116,7 @@ describe("MultiSourceScanner", () => {
       },
     }
 
-    const scanner = new MultiSourceScanner([failingSource, workingSource])
+    const scanner = createMultiSourceScanner([failingSource, workingSource])
     const results = await scanner.scan([makePackage("pkg", "1.0.0")])
 
     // Should still get results from working source
