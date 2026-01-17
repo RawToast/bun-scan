@@ -1,6 +1,7 @@
 {
   "name": "bun-scan",
   "version": "1.1.0-beta.1",
+  "private": true,
   "description": "Vulnerability scanner for Bun projects",
   "keywords": [
     "audit",
@@ -27,6 +28,10 @@
     "type": "github",
     "url": "https://github.com/sponsors/RawToast"
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "files": [
     "CHANGELOG.md",
     "LICENSE",
@@ -40,15 +45,15 @@
   "types": "./src/index.ts",
   "exports": "./src/index.ts",
   "scripts": {
-    "dev": "tsgo --watch --noEmit",
-    "build": "bun run check",
-    "lint": "oxlint",
-    "lint:check": "oxlint check",
+    "dev": "turbo watch compile format lint",
+    "lint": "turbo lint",
+    "lint:check": "oxlint check src packages",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "compile": "tsgo --noEmit",
+    "compile": "turbo compile",
+    "test": "turbo test",
     "clean": "rm -rf dist build node_modules/.cache",
-    "check": "bun format && bun lint:check && bun compile && bun test",
+    "check": "bun format && bun lint:check && turbo compile && turbo test",
     "prepare": "bunx lefthook install"
   },
   "dependencies": {
@@ -57,9 +62,11 @@
   "devDependencies": {
     "@types/bun": "1.3.6",
     "@typescript/native-preview": "7.0.0-dev.20260114.1",
+    "bun-types": "1.3.6",
     "lefthook": "2.0.15",
     "oxfmt": "0.24.0",
-    "oxlint": "1.39.0"
+    "oxlint": "1.39.0",
+    "turbo": "2.7.5"
   },
   "engines": {
     "bun": ">=1.0.0"
