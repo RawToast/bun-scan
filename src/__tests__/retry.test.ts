@@ -97,8 +97,6 @@ describe("Retry Logic", () => {
 
   describe("Exponential Backoff", () => {
     test("applies exponential backoff between retries", async () => {
-      // Track the delays that would be applied
-      const delays: number[] = []
       let attempts = 0
 
       const operation = async () => {
@@ -119,15 +117,10 @@ describe("Retry Logic", () => {
 
       expect(attempts).toBe(3)
 
-      // Verify the expected delays based on exponential backoff formula: delayMs * 1.5^(attempt-1)
-      // Attempt 1 fails -> delay = 100 * 1.5^0 = 100ms
-      // Attempt 2 fails -> delay = 100 * 1.5^1 = 150ms
-      const expectedDelay1 = baseDelay * 1.5 ** 0 // 100
-      const expectedDelay2 = baseDelay * 1.5 ** 1 // 150
+      const expectedDelays = [baseDelay * 1.5 ** 0, baseDelay * 1.5 ** 1]
 
-      expect(expectedDelay1).toBe(100)
-      expect(expectedDelay2).toBe(150)
-      expect(expectedDelay2).toBeGreaterThan(expectedDelay1)
+      expect(recordedDelays).toEqual(expectedDelays)
+      expect(recordedDelays[1]).toBeGreaterThan(recordedDelays[0] ?? 0)
     })
 
     test("calculates correct delay for multiple retries", async () => {
@@ -160,6 +153,7 @@ describe("Retry Logic", () => {
         baseDelay * 1.5 ** 2, // 225
       ]
 
+      expect(recordedDelays).toEqual(expectedDelays)
       expect(expectedDelays[0]).toBe(100)
       expect(expectedDelays[1]).toBe(150)
       expect(expectedDelays[2]).toBe(225)
