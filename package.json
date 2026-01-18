@@ -1,6 +1,5 @@
 {
   "name": "bun-scan",
-  "version": "1.1.0-beta.1",
   "private": true,
   "description": "Vulnerability scanner for Bun projects",
   "keywords": [

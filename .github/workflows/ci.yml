@@ -50,6 +50,7 @@ jobs:
           bunx osv-scanner --lockfile=bun.lock || true
 
       - name: Package verification
+        working-directory: packages/scanner
         run: |
           bun pm pack --dry-run
           echo "Verifying package contents..."
