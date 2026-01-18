@@ -31,28 +31,17 @@
   "workspaces": [
     "packages/*"
   ],
-  "files": [
-    "CHANGELOG.md",
-    "LICENSE",
-    "package.json",
-    "README.md",
-    "SECURITY.md",
-    "!src/**/__tests__",
-    "src/**/*.ts"
-  ],
   "type": "module",
-  "types": "./src/index.ts",
-  "exports": "./src/index.ts",
   "scripts": {
     "dev": "turbo watch compile format lint",
-    "lint": "turbo lint",
-    "lint:check": "oxlint check src packages",
+    "lint": "oxlint",
+    "lint:check": "oxlint check packages",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "compile": "turbo compile",
     "test": "turbo test",
     "clean": "rm -rf dist build node_modules/.cache",
-    "check": "bun format && bun lint:check && turbo compile && turbo test",
+    "check": "turbo format:check lint:check compile test --parallel",
     "prepare": "bunx lefthook install"
   },
   "dependencies": {

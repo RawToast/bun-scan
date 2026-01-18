@@ -21,11 +21,7 @@
     "noUnusedParameters": true,
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedSideEffectImports": true,
-    "incremental": true,
-    "paths": {
-      "~/*": ["./src/*"]
-    }
+    "incremental": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "apps", "packages"]
+  "exclude": ["node_modules", "dist"]
 }

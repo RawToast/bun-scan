@@ -1,5 +1,6 @@
 [install]
 exact = true
+linker = "isolated"
 
 [test]
-preload = ["./src/__tests__/setup.ts"]
+preload = ["./.test-guard.ts"]
