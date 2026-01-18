@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { DEFAULT_SOURCE } from "./types.js"
 import { logger } from "./logger.js"
-import { ENV, OSV_API, getConfig } from "./constants.js"
+import { ENV, OSV_API } from "./constants.js"
 
 /**
  * Default configuration values
