@@ -130,7 +130,7 @@ export function createNpmAuditClient(options: CreateNpmAuditClientOptions = {}):
       }
     }
 
-    logger.info(`Found ${advisories.length} advisories for ${packageCount} packages`)
+    logger.debug(`Found ${advisories.length} advisories for ${packageCount} packages`)
 
     return advisories
   }
@@ -172,7 +172,7 @@ export function createNpmAuditClient(options: CreateNpmAuditClientOptions = {}):
 
     // Deduplicate packages by name@version
     const uniquePackages = deduplicatePackages(packages)
-    logger.info(`Scanning ${uniquePackages.length} unique packages (${packages.length} total)`)
+    logger.debug(`Scanning ${uniquePackages.length} unique packages (${packages.length} total)`)
 
     // Build request payload: { "package-name": ["version1", "version2"] }
     const requestPayload = buildRequestPayload(uniquePackages)

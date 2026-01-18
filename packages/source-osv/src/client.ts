@@ -82,7 +82,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
     }
 
     const vulnCount = parsed.results.reduce((sum, r) => sum + (r.vulns?.length || 0), 0)
-    logger.info(`Batch query found ${vulnCount} vulnerabilities across ${queries.length} packages`)
+    logger.debug(`Batch query found ${vulnCount} vulnerabilities across ${queries.length} packages`)
 
     return [...new Set(vulnerabilityIds)] // Deduplicate IDs
   }
@@ -122,7 +122,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
     if (ids.length === 0) return []
 
     const uniqueIds = [...new Set(ids)] // Deduplicate requests
-    logger.info(`Fetching details for ${uniqueIds.length} vulnerabilities`)
+    logger.debug(`Fetching details for ${uniqueIds.length} vulnerabilities`)
 
     // Process in smaller chunks to avoid overwhelming the API
     const chunkSize = PERFORMANCE.MAX_CONCURRENT_DETAILS
@@ -139,7 +139,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
       }
     }
 
-    logger.info(`Retrieved ${vulnerabilities.length}/${uniqueIds.length} vulnerability details`)
+    logger.debug(`Retrieved ${vulnerabilities.length}/${uniqueIds.length} vulnerability details`)
     return vulnerabilities
   }
 
@@ -244,7 +244,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
       }
     }
 
-    logger.info(`Individual queries completed: ${successCount}/${queries.length} successful`)
+    logger.debug(`Individual queries completed: ${successCount}/${queries.length} successful`)
     return vulnerabilities
   }
 
@@ -261,7 +261,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
 
     // Deduplicate packages by name@version
     const uniquePackages = deduplicatePackages(packages)
-    logger.info(`Scanning ${uniquePackages.length} unique packages (${packages.length} total)`)
+    logger.debug(`Scanning ${uniquePackages.length} unique packages (${packages.length} total)`)
 
     // Create OSV queries
     const queries = uniquePackages.map((pkg) => ({

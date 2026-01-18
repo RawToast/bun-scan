@@ -52,7 +52,7 @@ export const scanner: Bun.Security.Scanner = {
 
   async scan({ packages }) {
     try {
-      logger.info(`Starting vulnerability scan for ${packages.length} packages`)
+      logger.debug(`Starting vulnerability scan for ${packages.length} packages`)
 
       // Load configuration (includes source and ignore rules)
       const config = await loadConfig()
@@ -77,12 +77,10 @@ export const scanner: Bun.Security.Scanner = {
         if (warnings.length > 0) {
           // Print warnings but don't report to bun (no prompt)
           for (const warning of warnings) {
-            logger.warn(`[ADVISORY] ${warning.package}: ${warning.message}`, {
-              id: warning.id,
-              level: warning.level,
-            })
+            const urlSuffix = warning.url ? `: ${warning.url}` : ""
+            logger.warn(`[ADVISORY] ${warning.package}: ${warning.message}${urlSuffix}`)
           }
-          logger.info(
+          logger.debug(
             `${warnings.length} warning-level advisories printed (not reported to bun due to bunReportWarnings=false)`,
           )
         }

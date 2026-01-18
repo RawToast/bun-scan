@@ -61,9 +61,9 @@ async function testPackages(packageSpecs: string[]) {
     })
   }
 
-  logger.info(`Testing ${packages.length} packages:`)
+  logger.debug(`Testing ${packages.length} packages:`)
   for (const pkg of packages) {
-    logger.info(`  - ${pkg.name}@${pkg.version}`)
+    logger.debug(`  - ${pkg.name}@${pkg.version}`)
   }
 
   const startTime = Date.now()
@@ -124,7 +124,7 @@ async function scanPackageJson(packageJsonPath: string) {
       })
     }
 
-    logger.info(`Found ${packages.length} dependencies in ${packageJsonPath}`)
+    logger.debug(`Found ${packages.length} dependencies in ${packageJsonPath}`)
     await testPackages(packages.map((p) => `${p.name}@${p.version}`))
   } catch (error) {
     exitWithError(

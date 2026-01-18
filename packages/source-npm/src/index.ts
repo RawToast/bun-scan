@@ -85,12 +85,12 @@ export function createNpmSource(
     async scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]> {
       if (packages.length === 0) return []
 
-      logger.info(`[npm] Starting scan for ${packages.length} packages`)
+      logger.debug(`[npm] Starting scan for ${packages.length} packages`)
 
       const advisories = await client.queryVulnerabilities(packages)
       const bunAdvisories = processor.processAdvisories(advisories, packages)
 
-      logger.info(`[npm] Scan complete: ${bunAdvisories.length} advisories found`)
+      logger.debug(`[npm] Scan complete: ${bunAdvisories.length} advisories found`)
       return bunAdvisories
     },
   }

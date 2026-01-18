@@ -88,12 +88,12 @@ export function createOSVSource(
     name: "osv",
 
     async scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]> {
-      logger.info(`[OSV] Starting scan for ${packages.length} packages`)
+      logger.debug(`[OSV] Starting scan for ${packages.length} packages`)
 
       const vulnerabilities = await client.queryVulnerabilities(packages)
       const advisories = processor.processVulnerabilities(vulnerabilities, packages)
 
-      logger.info(`[OSV] Scan complete: ${advisories.length} advisories found`)
+      logger.debug(`[OSV] Scan complete: ${advisories.length} advisories found`)
       return advisories
     },
   }

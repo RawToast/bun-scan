@@ -192,7 +192,7 @@ export function createVulnerabilityProcessor(
       return []
     }
 
-    logger.info(
+    logger.debug(
       `Processing ${vulnerabilities.length} vulnerabilities against ${packages.length} packages`,
     )
 
@@ -222,10 +222,10 @@ export function createVulnerabilityProcessor(
     }
 
     if (ignoredCount > 0) {
-      logger.info(`Ignored ${ignoredCount} vulnerabilities based on config`)
+      logger.debug(`Ignored ${ignoredCount} vulnerabilities based on config`)
     }
 
-    logger.info(`Generated ${advisories.length} security advisories`)
+    logger.debug(`Generated ${advisories.length} security advisories`)
     return advisories
   }
 
