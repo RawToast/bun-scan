@@ -10,10 +10,10 @@ const isMonorepoRoot = cwd === rootDir
 
 if (isMonorepoRoot) {
   console.log("\n💡 Detected 'bun test' from monorepo root")
-  console.log("🚀 Running 'turbo run test' instead...\n")
+  console.log("🚀 Running 'bun run test' instead...\n")
 
   const result = spawnSync({
-    cmd: ["turbo", "run", "test"],
+    cmd: ["bun", "run", "test"],
     stdio: ["inherit", "inherit", "inherit"],
     cwd: rootDir,
   })
