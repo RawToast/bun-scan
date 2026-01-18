@@ -35,9 +35,11 @@ scanner = "bun-scan"
 
 Create a `.bun-scan.json` file in your project root to ignore specific vulnerabilities:
 
+Note to set the schema version in the URL to the correct version:
+
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/schema/bun-scan.schema.json",
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/v1.1.0/bun-scan.schema.json",
   "packages": {
     "hono": {
       "vulnerabilities": ["CVE-2026-22818"],
