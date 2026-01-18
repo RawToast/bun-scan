@@ -96,23 +96,23 @@ describe("mapSeverityToLevel", () => {
   })
 
   describe("priority", () => {
-    test("database_specific takes precedence over CVSS", () => {
+    test("falls back to CVSS when database_specific is non-fatal", () => {
       const vuln: OSVVulnerability = {
         id: "TEST-011",
         database_specific: { severity: "LOW" },
         severity: [{ type: "CVSS_V3", score: "9.0" }],
       }
-      // database_specific.severity is LOW (not fatal), so we fall through to CVSS
+      // database_specific.severity is LOW (non-fatal), so we evaluate CVSS
       expect(mapSeverityToLevel(vuln)).toBe("fatal")
     })
 
-    test("uses CVSS when database_specific severity is fatal", () => {
+    test("database_specific fatal takes precedence over CVSS", () => {
       const vuln: OSVVulnerability = {
         id: "TEST-012",
         database_specific: { severity: "CRITICAL" },
         severity: [{ type: "CVSS_V3", score: "3.0" }],
       }
-      // database_specific.severity is CRITICAL (fatal), returns fatal immediately
+      // CRITICAL in database_specific returns fatal immediately
       expect(mapSeverityToLevel(vuln)).toBe("fatal")
     })
   })

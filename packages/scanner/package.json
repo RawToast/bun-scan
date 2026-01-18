@@ -28,31 +28,34 @@
     "url": "https://github.com/sponsors/RawToast"
   },
   "bin": {
-    "bun-scan": "./src/cli.ts"
+    "bun-scan": "./dist/cli.js"
   },
   "files": [
-    "CHANGELOG.md",
-    "LICENSE",
-    "package.json",
-    "README.md",
-    "SECURITY.md",
-    "!src/**/__tests__",
-    "src/**/*.ts"
+    "dist",
+    "src"
   ],
   "type": "module",
   "types": "./src/index.ts",
-  "exports": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target bun --external zod && bun build src/cli.ts --outdir dist --target bun --external zod",
+    "prepublishOnly": "bun run build",
     "compile": "tsgo --noEmit",
     "test": "bun test",
     "lint": "oxlint check"
   },
   "dependencies": {
-    "@repo/core": "workspace:*",
-    "@repo/source-npm": "workspace:*",
-    "@repo/source-osv": "workspace:*"
+    "zod": "4.3.5"
   },
   "devDependencies": {
+    "@repo/core": "workspace:*",
+    "@repo/source-npm": "workspace:*",
+    "@repo/source-osv": "workspace:*",
     "@types/bun": "1.3.6",
     "@typescript/native-preview": "7.0.0-dev.20260114.1",
     "bun-types": "1.3.6"
