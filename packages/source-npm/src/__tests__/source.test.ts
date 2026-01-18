@@ -195,7 +195,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
   })
 
   test("ignores globally ignored advisories by GHSA alias", () => {
-    const processor = createAdvisoryProcessor({ ignore: ["GHSA-XXXX-XXXX-XXXX"] })
+    const processor = createAdvisoryProcessor({ ignore: ["GHSA-xxxx-xxxx-xxxx"] })
     const advisories = [
       {
         id: 1103907,
@@ -243,7 +243,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
     const processor = createAdvisoryProcessor({
       packages: {
         "test-pkg": {
-          vulnerabilities: ["GHSA-3VHC-576X-3QV4"],
+          vulnerabilities: ["GHSA-3vhc-576x-3qv4"],
           reason: "Not affected in our usage",
         },
       },
@@ -301,7 +301,7 @@ describe("AdvisoryProcessor ignore configuration", () => {
 
     const result = processor.processAdvisories(advisories, packages)
     expect(result).toHaveLength(1)
-    expect(result[0]!.aliases).toEqual(["CVE-2024-1234", "CVE-2024-5678", "GHSA-XXXX-XXXX-XXXX"])
+    expect(result[0]!.aliases).toEqual(["CVE-2024-1234", "CVE-2024-5678", "GHSA-xxxx-xxxx-xxxx"])
   })
 
   test("handles advisory with no aliases", () => {

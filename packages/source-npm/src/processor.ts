@@ -30,7 +30,7 @@ export function createAdvisoryProcessor(ignoreConfig: IgnoreConfig = {}): Adviso
   function buildAliases(advisory: NpmAdvisory): string[] {
     const aliases = new Set<string>([
       ...(advisory.cves ?? []),
-      ...(advisory.github_advisory_id ? [advisory.github_advisory_id.toUpperCase()] : []),
+      ...(advisory.github_advisory_id ? [advisory.github_advisory_id] : []),
     ])
 
     const ghsaFromUrl = extractGhsaFromUrl(advisory.url)
@@ -43,7 +43,7 @@ export function createAdvisoryProcessor(ignoreConfig: IgnoreConfig = {}): Adviso
 
   function extractGhsaFromUrl(url: string): string | null {
     const match = url.match(/GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}/i)
-    return match ? match[0].toUpperCase() : null
+    return match ? match[0] : null
   }
 
   /**
