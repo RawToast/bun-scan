@@ -75,7 +75,7 @@ export async function withRetry<T>(
       const result = await operation()
 
       if (attempt > 1) {
-        logger.info(`${operationName} succeeded on attempt ${attempt}`)
+        logger.debug(`${operationName} succeeded on attempt ${attempt}`)
       }
 
       return result

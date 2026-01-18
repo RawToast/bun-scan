@@ -261,7 +261,7 @@ async function tryLoadConfigFile(filename: string): Promise<Config | null> {
     const content = await file.json()
     const parsed = ConfigSchema.parse(content)
 
-    logger.info(`Loaded configuration from ${filename}`)
+    logger.debug(`Loaded configuration from ${filename}`)
     logConfigStats(parsed)
 
     return parsed
@@ -289,7 +289,7 @@ function logConfigStats(config: Config): void {
   const source = config.source ?? DEFAULT_SOURCE
 
   if (globalIgnores > 0 || packageRules > 0) {
-    logger.info(`Configuration loaded`, {
+    logger.debug(`Configuration loaded`, {
       source,
       globalIgnores,
       packageRules,

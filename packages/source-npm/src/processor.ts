@@ -195,7 +195,7 @@ export function createAdvisoryProcessor(ignoreConfig: IgnoreConfig = {}): Adviso
       return []
     }
 
-    logger.info(`Processing ${advisories.length} advisories against ${packages.length} packages`)
+    logger.debug(`Processing ${advisories.length} advisories against ${packages.length} packages`)
 
     // Reset ignored count for this batch
     ignoredCount = 0
@@ -209,9 +209,9 @@ export function createAdvisoryProcessor(ignoreConfig: IgnoreConfig = {}): Adviso
     }
 
     if (ignoredCount > 0) {
-      logger.info(`Ignored ${ignoredCount} advisories based on configuration`)
+      logger.debug(`Ignored ${ignoredCount} advisories based on configuration`)
     }
-    logger.info(`Generated ${bunAdvisories.length} security advisories`)
+    logger.debug(`Generated ${bunAdvisories.length} security advisories`)
     return bunAdvisories
   }
 

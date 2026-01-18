@@ -88,7 +88,7 @@ export function createMultiSourceScanner(sources: VulnerabilitySource[]): MultiS
       if (!source) continue
 
       if (result.status === "fulfilled") {
-        logger.info(`[${source.name}] Found ${result.value.length} advisories`)
+        logger.debug(`[${source.name}] Found ${result.value.length} advisories`)
         allAdvisories.push(...result.value)
       } else {
         logger.error(`[${source.name}] Scan failed`, {
