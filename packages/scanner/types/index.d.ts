@@ -88,6 +88,17 @@ export interface Config {
   packages?: Record<string, IgnorePackageRule>
 }
 
+export interface OsvConfig {
+  apiBaseUrl?: string
+  timeoutMs?: number
+  disableBatch?: boolean
+}
+
+export interface CreateOSVSourceOptions {
+  ignore?: IgnoreConfig
+  osv?: OsvConfig
+}
+
 export interface CompiledPackageRule {
   vulnerabilitiesSet: Set<string>
   until?: string
@@ -149,7 +160,9 @@ export declare function shouldIgnoreVulnerability(
 // ============================================================================
 
 /** Create an OSV.dev vulnerability source */
-export declare function createOSVSource(config?: IgnoreConfig): VulnerabilitySource
+export declare function createOSVSource(
+  config?: CreateOSVSourceOptions | IgnoreConfig,
+): VulnerabilitySource
 
 /** Create an npm audit vulnerability source */
 export declare function createNpmSource(config?: IgnoreConfig): VulnerabilitySource
