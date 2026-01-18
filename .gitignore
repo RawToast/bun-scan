@@ -6,6 +6,7 @@ bin/
 dist/
 build/
 tsconfig.tsbuildinfo
+.turbo
 
 # OS files
 .DS_Store
