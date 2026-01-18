@@ -39,7 +39,7 @@ Note to set the schema version in the URL to the correct version:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/v1.1.0/bun-scan.schema.json",
+  "$schema": "https://raw.githubusercontent.com/RawToast/bun-scan/refs/tags/v1.1.0/schema/bun-scan.schema.json",
   "packages": {
     "hono": {
       "vulnerabilities": ["CVE-2026-22818"],
@@ -53,7 +53,7 @@ Note to set the schema version in the URL to the correct version:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/schema/bun-scan.schema.json",
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/v1.1.0/schema/bun-scan.schema.json",
   "ignore": ["CVE-2024-1234", "GHSA-xxxx-xxxx-xxxx"]
 }
 ```
@@ -62,7 +62,7 @@ Note to set the schema version in the URL to the correct version:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/schema/bun-scan.schema.json",
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/v1.1.0/schema/bun-scan.schema.json",
   "packages": {
     "lodash": {
       "vulnerabilities": ["CVE-2021-23337"],
@@ -79,7 +79,7 @@ All settings can be configured via `.bun-scan.json`:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/schema/bun-scan.schema.json",
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/v1.1.0/schema/bun-scan.schema.json",
   "source": "osv",
   "bunReportWarnings": true,
   "osv": {
@@ -276,6 +276,6 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - [Bun Security Scanner API](https://bun.com/docs/install/security-scanner-api)
 - [OSV.dev](https://osv.dev/)
-- [Github advisories](https://github.com/advisories)
+- [GitHub advisories](https://github.com/advisories)
 - [Bun OSV Scanner](https://github.com/bun-security-scanner/osv)
 - [Bun NPM Scanner](https://github.com/bun-security-scanner/npm)

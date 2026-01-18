@@ -22,13 +22,13 @@ Add to your `bunfig.toml`:
 scanner = "bun-scan"
 ```
 
-Select your source from `npm`, `osv` (default), or run checks against `both`
+Select your source from `npm`, `osv` (default), or run checks against `both` by setting up your config in `.bun-scan.config.json`
 
 Note to set the schema version in the URL to the correct version:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/v1.1.0/bun-scan.schema.json",
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/v1.1.0/schema/bun-scan.schema.json",
   "source": "npm"
 }
 ```
@@ -36,11 +36,11 @@ Note to set the schema version in the URL to the correct version:
 ### Ignoring Vulnerabilities
 
 A package may have a vulnerability, but your project is not affected. In this scenario, you would
-not want installations to be prevented. To work around this, the vulnerability can be flagged as ignored in your `bun-scan.config.json`
+not want installations to be prevented. To work around this, the vulnerability can be flagged as ignored in your `.bun-scan.config.json`
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/master/v1.1.0/bun-scan.schema.json",
+  "$schema": "https://raw.githubusercontent.com/rawtoast/bun-scan/v1.1.0/schema/bun-scan.schema.json",
   "source": "npm",
   "packages": {
     "hono": {
@@ -86,6 +86,6 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - [Bun Security Scanner API](https://bun.com/docs/install/security-scanner-api)
 - [OSV.dev](https://osv.dev/)
-- [Github advisories](https://github.com/advisories)
+- [GitHub advisories](https://github.com/advisories)
 - [Bun OSV Scanner](https://github.com/bun-security-scanner/osv)
 - [Bun NPM Scanner](https://github.com/bun-security-scanner/npm)
