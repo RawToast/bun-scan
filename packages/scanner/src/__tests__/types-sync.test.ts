@@ -33,6 +33,8 @@ describe("Types Sync", () => {
     "createSource",
     "createSources",
     "createMultiSourceScanner",
+
+    "CONFIG_DEFAULTS",
   ]
 
   test("all expected exports exist in scanner module", () => {
