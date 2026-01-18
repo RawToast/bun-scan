@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import { loadConfig } from "~/config.js"
+import { loadConfig } from "../config.js"
 
 /**
  * Helper to write a config file for testing

@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from "bun:test"
-import { createLogger, logger } from "~/logger.js"
+import { createLogger, logger } from "../logger.js"
 
 describe("Logger", () => {
   describe("Log Level Filtering", () => {

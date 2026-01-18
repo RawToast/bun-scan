@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import { DEFAULT_RETRY_CONFIG, resetSleep, type RetryConfig, setSleep, withRetry } from "~/retry.js"
+import {
+  DEFAULT_RETRY_CONFIG,
+  resetSleep,
+  type RetryConfig,
+  setSleep,
+  withRetry,
+} from "../retry.js"
 
 describe("Retry Logic", () => {
   // Track delays for verification in tests

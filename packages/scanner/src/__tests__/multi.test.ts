@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { createMultiSourceScanner } from "~/sources/multi"
+import { createMultiSourceScanner } from "../sources/multi.js"
 import type { VulnerabilitySource } from "@repo/core"
 
 const makeAdvisory = (

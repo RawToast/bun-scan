@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import { ENV, getConfig, HTTP, OSV_API, PERFORMANCE, SECURITY } from "~/constants.js"
+import { ENV, getConfig, HTTP, OSV_API, PERFORMANCE, SECURITY } from "../constants.js"
 
 describe("Constants", () => {
   const envKeys = [...Object.values(ENV), "TEST_VAR"]

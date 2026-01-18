@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { createSource, createSources } from "~/sources/factory"
+import { createSource, createSources } from "../sources/factory.js"
 
 describe("createSource", () => {
   const emptyConfig = {}
