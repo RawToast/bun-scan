@@ -1,20 +1,27 @@
 import type { OSVQuery, OSVVulnerability } from "./schema.js"
 import { OSVResponseSchema, OSVBatchResponseSchema, OSVVulnerabilitySchema } from "./schema.js"
-import { OSV_API, HTTP, PERFORMANCE, getConfig, ENV, withRetry, logger } from "@repo/core"
+import type { OsvConfig } from "@repo/core"
+import { OSV_API, HTTP, PERFORMANCE, CONFIG_DEFAULTS, withRetry, logger } from "@repo/core"
 
 /** OSV Client interface */
 export interface OSVClient {
   queryVulnerabilities(packages: Bun.Security.Package[]): Promise<OSVVulnerability[]>
 }
 
+/** Options for creating OSV client */
+export interface CreateOSVClientOptions {
+  osv?: OsvConfig
+}
+
 /**
  * Create an OSV API Client
  * Handles all communication with OSV.dev API including batch queries and individual lookups
  */
-export function createOSVClient(): OSVClient {
-  const baseUrl = getConfig(ENV.API_BASE_URL, OSV_API.BASE_URL)
-  const timeout = getConfig(ENV.TIMEOUT_MS, OSV_API.TIMEOUT_MS)
-  const useBatch = !getConfig(ENV.DISABLE_BATCH, false)
+export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient {
+  const osvConfig = options.osv ?? CONFIG_DEFAULTS.osv
+  const baseUrl = osvConfig.apiBaseUrl ?? OSV_API.BASE_URL
+  const timeout = osvConfig.timeoutMs ?? OSV_API.TIMEOUT_MS
+  const useBatch = !(osvConfig.disableBatch ?? false)
 
   /**
    * Deduplicate packages by name@version to avoid redundant queries

@@ -5,21 +5,28 @@
 
 import type { NpmAdvisory, NpmAuditRequest } from "./schema.js"
 import { NpmAuditResponseSchema } from "./schema.js"
-import { NPM_AUDIT_API, HTTP, getConfig, ENV } from "./constants.js"
-import { withRetry, logger } from "@repo/core"
+import { NPM_AUDIT_API, HTTP } from "./constants.js"
+import type { NpmConfig } from "@repo/core"
+import { CONFIG_DEFAULTS, withRetry, logger } from "@repo/core"
 
 /** npm Audit Client interface */
 export interface NpmAuditClient {
   queryVulnerabilities(packages: Bun.Security.Package[]): Promise<NpmAdvisory[]>
 }
 
+/** Options for creating npm audit client */
+export interface CreateNpmAuditClientOptions {
+  npm?: NpmConfig
+}
+
 /**
  * Create an npm Audit API Client
  * Handles communication with npm registry's bulk advisory endpoint
  */
-export function createNpmAuditClient(): NpmAuditClient {
-  const registryUrl = getConfig(ENV.REGISTRY_URL, NPM_AUDIT_API.REGISTRY_URL)
-  const timeout = getConfig(ENV.TIMEOUT_MS, NPM_AUDIT_API.TIMEOUT_MS)
+export function createNpmAuditClient(options: CreateNpmAuditClientOptions = {}): NpmAuditClient {
+  const npmConfig = options.npm ?? CONFIG_DEFAULTS.npm
+  const registryUrl = npmConfig.registryUrl ?? NPM_AUDIT_API.REGISTRY_URL
+  const timeout = npmConfig.timeoutMs ?? NPM_AUDIT_API.TIMEOUT_MS
 
   /**
    * Deduplicate packages by name@version to avoid redundant queries

@@ -57,6 +57,58 @@
         },
         "additionalProperties": false
       }
+    },
+    "logLevel": {
+      "type": "string",
+      "enum": ["debug", "info", "warn", "error"],
+      "default": "info",
+      "description": "Logging verbosity level. Note: Due to logger initialization timing, use BUN_SCAN_LOG_LEVEL environment variable for runtime control."
+    },
+    "bunReportWarnings": {
+      "type": "boolean",
+      "default": true,
+      "description": "Report warning-level advisories to Bun (causes install prompt). Set to false to print warnings without prompting."
+    },
+    "osv": {
+      "type": "object",
+      "description": "OSV.dev source configuration",
+      "properties": {
+        "apiBaseUrl": {
+          "type": "string",
+          "default": "https://api.osv.dev/v1",
+          "description": "OSV API base URL"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "default": 30000,
+          "minimum": 1000,
+          "description": "Request timeout in milliseconds"
+        },
+        "disableBatch": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable batch queries (use individual queries instead)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "npm": {
+      "type": "object",
+      "description": "npm Registry source configuration",
+      "properties": {
+        "registryUrl": {
+          "type": "string",
+          "default": "https://registry.npmjs.org",
+          "description": "npm registry URL"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "default": 30000,
+          "minimum": 1000,
+          "description": "Request timeout in milliseconds"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,
@@ -85,6 +137,16 @@
     {
       "source": "npm",
       "ignore": ["GHSA-xxxx-xxxx-xxxx"]
+    },
+    {
+      "bunReportWarnings": false,
+      "logLevel": "warn"
+    },
+    {
+      "osv": {
+        "timeoutMs": 60000,
+        "disableBatch": true
+      }
     }
   ]
 }

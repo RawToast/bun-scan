@@ -20,9 +20,12 @@ export type {
   Config,
   IgnoreConfig,
   IgnorePackageRule,
+  NpmConfig,
+  OsvConfig,
 } from "./config.js"
 export {
   compileIgnoreConfig,
+  CONFIG_DEFAULTS,
   ConfigSchema,
   IgnoreConfigSchema,
   loadConfig,
