@@ -46,7 +46,7 @@ jobs:
           fi
 
           TAG_VERSION="${TAG_NAME#v}"
-          PKG_VERSION="$(node -p "require('./package.json').version")"
+          PKG_VERSION="$(node -p "require('./packages/scanner/package.json').version")"
 
           echo "Release tag version: $TAG_VERSION"
           echo "package.json version: $PKG_VERSION"
@@ -78,12 +78,13 @@ jobs:
         run: bun test
 
       - name: Package verification
+        working-directory: packages/scanner
         run: bun pm pack --dry-run
 
       - name: Determine npm tag
         id: npm-tag
         run: |
-          VERSION="$(node -p "require('./package.json').version")"
+          VERSION="$(node -p "require('./packages/scanner/package.json').version")"
           if [[ "$VERSION" == *"-alpha"* ]]; then
             echo "tag=alpha" >> "$GITHUB_OUTPUT"
           elif [[ "$VERSION" == *"-beta"* ]]; then
@@ -97,8 +98,10 @@ jobs:
 
       - name: Publish (dry-run)
         if: github.event_name == 'workflow_dispatch' && inputs.publish != 'true'
+        working-directory: packages/scanner
         run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }} --dry-run
 
       - name: Publish
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
+        working-directory: packages/scanner
         run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
