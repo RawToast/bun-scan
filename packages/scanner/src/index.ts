@@ -1,6 +1,6 @@
 /// <reference types="bun-types" />
 import "@repo/core"
-import { loadConfig, logger } from "@repo/core"
+import { loadConfig, logger, CONFIG_DEFAULTS } from "@repo/core"
 import { createSources } from "./sources/factory.js"
 import { createMultiSourceScanner } from "./sources/multi.js"
 
@@ -16,6 +16,8 @@ export type {
   LogLevel,
   LogContext,
   RetryConfig,
+  OsvConfig,
+  NpmConfig,
 } from "@repo/core"
 
 export {
@@ -29,6 +31,7 @@ export {
   withRetry,
   DEFAULT_RETRY_CONFIG,
   DEFAULT_SOURCE,
+  CONFIG_DEFAULTS,
 } from "@repo/core"
 
 // Re-export source factories for advanced usage
@@ -53,6 +56,7 @@ export const scanner: Bun.Security.Scanner = {
 
       // Load configuration (includes source and ignore rules)
       const config = await loadConfig()
+      const bunReportWarnings = config.bunReportWarnings ?? CONFIG_DEFAULTS.bunReportWarnings
 
       // Create vulnerability sources based on config
       const sources = createSources(config.source ?? "osv", config)
@@ -64,6 +68,28 @@ export const scanner: Bun.Security.Scanner = {
       logger.info(
         `Scan completed: ${advisories.length} advisories found for ${packages.length} packages`,
       )
+
+      // Filter warnings if bunReportWarnings is false
+      if (!bunReportWarnings) {
+        const warnings = advisories.filter((a) => a.level === "warn")
+        const fatals = advisories.filter((a) => a.level === "fatal")
+
+        if (warnings.length > 0) {
+          // Print warnings but don't report to bun (no prompt)
+          for (const warning of warnings) {
+            logger.warn(`[ADVISORY] ${warning.package}: ${warning.message}`, {
+              id: warning.id,
+              level: warning.level,
+            })
+          }
+          logger.info(
+            `${warnings.length} warning-level advisories printed (not reported to bun due to bunReportWarnings=false)`,
+          )
+        }
+
+        // Only return fatal advisories to bun
+        return fatals
+      }
 
       return advisories
     } catch (error) {
