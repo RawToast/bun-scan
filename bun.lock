@@ -29,6 +29,49 @@
         "bun-types": "1.3.6",
       },
     },
+    "packages/scanner": {
+      "name": "bun-scan",
+      "version": "1.1.0-beta.1",
+      "bin": {
+        "bun-scan": "./src/cli.ts",
+      },
+      "dependencies": {
+        "@repo/core": "workspace:*",
+        "@repo/source-npm": "workspace:*",
+        "@repo/source-osv": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "1.3.6",
+        "@typescript/native-preview": "7.0.0-dev.20260114.1",
+        "bun-types": "1.3.6",
+      },
+    },
+    "packages/source-npm": {
+      "name": "@repo/source-npm",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/core": "workspace:*",
+        "zod": "4.3.5",
+      },
+      "devDependencies": {
+        "@types/bun": "1.3.6",
+        "@typescript/native-preview": "7.0.0-dev.20260114.1",
+        "bun-types": "1.3.6",
+      },
+    },
+    "packages/source-osv": {
+      "name": "@repo/source-osv",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/core": "workspace:*",
+        "zod": "4.3.5",
+      },
+      "devDependencies": {
+        "@types/bun": "1.3.6",
+        "@typescript/native-preview": "7.0.0-dev.20260114.1",
+        "bun-types": "1.3.6",
+      },
+    },
   },
   "packages": {
     "@oxfmt/darwin-arm64": ["@oxfmt/darwin-arm64@0.24.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-aYXuGf/yq8nsyEcHindGhiz9I+GEqLkVq8CfPbd+6VE259CpPEH+CaGHEO1j6vIOmNr8KHRq+IAjeRO2uJpb8A=="],
@@ -65,6 +108,10 @@
 
     "@repo/core": ["@repo/core@workspace:packages/core"],
 
+    "@repo/source-npm": ["@repo/source-npm@workspace:packages/source-npm"],
+
+    "@repo/source-osv": ["@repo/source-osv@workspace:packages/source-osv"],
+
     "@types/bun": ["@types/bun@1.3.6", "", { "dependencies": { "bun-types": "1.3.6" } }, "sha512-uWCv6FO/8LcpREhenN1d1b6fcspAB+cefwD7uti8C8VffIv0Um08TKMn98FynpTiU38+y2dUO55T11NgDt8VAA=="],
 
     "@types/node": ["@types/node@25.0.8", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-powIePYMmC3ibL0UJ2i2s0WIbq6cg6UyVFQxSCpaPxxzAaziRfimGivjdF943sSGV6RADVbk0Nvlm5P/FB44Zg=="],
@@ -84,6 +131,8 @@
     "@typescript/native-preview-win32-arm64": ["@typescript/native-preview-win32-arm64@7.0.0-dev.20260114.1", "", { "os": "win32", "cpu": "arm64" }, "sha512-oEQFvvgzfWoMpzkFIjgNuUrZuzbPxLKt2IAnc2M91nrFhOPRa2Cf74M8+mFUXVA5wLyg8M5YW1Q2JKL0olxqcg=="],
 
     "@typescript/native-preview-win32-x64": ["@typescript/native-preview-win32-x64@7.0.0-dev.20260114.1", "", { "os": "win32", "cpu": "x64" }, "sha512-kYymlGjzvujMrq8/mjg0akfq4rMMXWeqDp/hKNXKPK463CFzvla1KmF9jEEGDEasMb38rA6c7tHdzwX9yHS+ew=="],
+
+    "bun-scan": ["bun-scan@workspace:packages/scanner"],
 
     "bun-types": ["bun-types@1.3.6", "", { "dependencies": { "@types/node": "*" } }, "sha512-OlFwHcnNV99r//9v5IIOgQ9Uk37gZqrNMCcqEaExdkVq3Avwqok1bJFmvGMCkCE0FqzdY8VMOZpfpR3lwI+CsQ=="],
 
