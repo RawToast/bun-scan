@@ -79,4 +79,67 @@ describe("NpmAuditClient strict mode behavior", () => {
       globalThis.fetch = originalFetch
     }
   })
+
+  test("rethrows on batch query failure when failOnScannerError is true (batched path)", async () => {
+    const client = createNpmAuditClient({
+      failOnScannerError: true,
+    })
+
+    // Mock fetch to throw for bulk advisory queries
+    const originalFetch = globalThis.fetch
+    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
+      const urlStr = url.toString()
+      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
+        throw new Error("Network error during bulk query")
+      }
+      return originalFetch(url, options)
+    }
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = mockFetch
+
+    try {
+      // Use 1001+ packages to trigger queryInBatches() (batch threshold is 1000)
+      const packages = Array.from({ length: 1001 }, (_, i) => makePackage(`pkg-${i}`, "1.0.0"))
+
+      await expect(client.queryVulnerabilities(packages)).rejects.toThrow(
+        "Network error during bulk query",
+      )
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  test("continues on batch query failure when failOnScannerError is false (batched path)", async () => {
+    const client = createNpmAuditClient({
+      failOnScannerError: false,
+    })
+
+    // Mock fetch to throw for bulk advisory queries
+    const originalFetch = globalThis.fetch
+    let queryCallCount = 0
+
+    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
+      const urlStr = url.toString()
+      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
+        queryCallCount++
+        throw new Error("Network error during bulk query")
+      }
+      return originalFetch(url, options)
+    }
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = mockFetch
+
+    try {
+      // Use 1001+ packages to trigger queryInBatches() (batch threshold is 1000)
+      const packages = Array.from({ length: 1001 }, (_, i) => makePackage(`pkg-${i}`, "1.0.0"))
+
+      // Should not throw, should return empty results after all batches fail
+      const result = await client.queryVulnerabilities(packages)
+      expect(result).toEqual([])
+      // 2 batches * 3 retry attempts each = 6 total fetch calls
+      expect(queryCallCount).toBe(6)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  }, 15000) // 15s timeout for batched queries with retries
 })

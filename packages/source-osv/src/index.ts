@@ -51,6 +51,8 @@ function isNewOptionsFormat(
 ): options is CreateOSVSourceOptions {
   // If it has 'osv' key, it's definitely new format
   if ("osv" in options) return true
+  // If 'failOnScannerError' key is present, it's new format
+  if ("failOnScannerError" in options) return true
   // If 'ignore' exists and is an object (not array), it's new format
   if (
     "ignore" in options &&
