@@ -6,14 +6,25 @@ export interface MultiSourceScanner {
   scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]>
 }
 
+/** Options for multi-source scanner */
+export interface MultiSourceScannerOptions {
+  /** When true, throw if any configured source fails */
+  failOnScannerError?: boolean
+}
+
 /**
  * Create a scanner that queries multiple vulnerability sources in parallel
  * Deduplicates results by ID/alias and takes highest severity for duplicates
  */
-export function createMultiSourceScanner(sources: VulnerabilitySource[]): MultiSourceScanner {
+export function createMultiSourceScanner(
+  sources: VulnerabilitySource[],
+  options?: MultiSourceScannerOptions,
+): MultiSourceScanner {
   if (sources.length === 0) {
     throw new Error("MultiSourceScanner requires at least one source")
   }
+
+  const failOnError = options?.failOnScannerError ?? false
 
   /**
    * Compare severity levels - returns true if a is higher severity than b
@@ -80,8 +91,9 @@ export function createMultiSourceScanner(sources: VulnerabilitySource[]): MultiS
     // Query all sources in parallel
     const results = await Promise.allSettled(sources.map((source) => source.scan(packages)))
 
-    // Collect all advisories
+    // Collect all advisories and track failures
     const allAdvisories: Bun.Security.Advisory[] = []
+    const failures: Array<{ name: string; error: string }> = []
 
     for (const [i, result] of results.entries()) {
       const source = sources[i]
@@ -91,10 +103,21 @@ export function createMultiSourceScanner(sources: VulnerabilitySource[]): MultiS
         logger.debug(`[${source.name}] Found ${result.value.length} advisories`)
         allAdvisories.push(...result.value)
       } else {
-        logger.error(`[${source.name}] Scan failed`, {
-          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
-        })
+        const errorMessage =
+          result.reason instanceof Error ? result.reason.message : String(result.reason)
+        logger.error(`[${source.name}] Scan failed`, { error: errorMessage })
+        failures.push({ name: source.name, error: errorMessage })
       }
+    }
+
+    if (failOnError && failures.length > 0) {
+      const details = failures.map((f) => `${f.name}: ${f.error}`).join("; ")
+      throw new Error(
+        `bun-scan: scan failed for ${failures.length === 1 ? "source" : "sources"} ` +
+          `${failures.map((f) => `"${f.name}"`).join(", ")}. ` +
+          `Details: ${details}. ` +
+          `failOnScannerError=true requires all configured sources to succeed.`,
+      )
     }
 
     return deduplicateAdvisories(allAdvisories)

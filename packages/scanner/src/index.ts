@@ -41,7 +41,7 @@ export { createNpmSource } from "@repo/source-npm"
 // Export scanner-specific utilities
 export { createSource, createSources } from "./sources/factory.js"
 export { createMultiSourceScanner } from "./sources/multi.js"
-export type { MultiSourceScanner } from "./sources/multi.js"
+export type { MultiSourceScanner, MultiSourceScannerOptions } from "./sources/multi.js"
 
 /**
  * Bun Security Scanner with configurable vulnerability sources
