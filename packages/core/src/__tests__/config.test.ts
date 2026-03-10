@@ -147,7 +147,15 @@ describe("Config", () => {
 describe("CR6 TOCTOU race condition", () => {
   const originalEnvValue = Bun.env[ENV_VAR]
 
+  // Track if we're in a test that mocked Bun.file
+  let mockRestore: (() => void) | null = null
+
   afterEach(async () => {
+    // Restore Bun.file if we mocked it
+    if (mockRestore) {
+      mockRestore()
+      mockRestore = null
+    }
     // Restore env and cleanup
     if (originalEnvValue === undefined) {
       delete Bun.env[ENV_VAR]
@@ -157,20 +165,45 @@ describe("CR6 TOCTOU race condition", () => {
     await cleanupConfigFiles()
   })
 
-  test("does not throw on ENOENT error in strict mode (TOCTOU catch-block)", async () => {
-    // Test the catch-block ENOENT handling directly.
-    // This simulates the TOCTOU scenario where exists() returns true but json() throws ENOENT.
-    // Since we can't mock Bun.file(), we test the critical invariant: any ENOENT error
-    // (whether from missing file or race condition) should be non-fatal even in strict mode.
+  test("does not throw when file vanishes between exists() and json() in strict mode", async () => {
+    // This is the actual TOCTOU race: file exists when exists() runs, but is gone when json() runs.
+    // We simulate this by mocking Bun.file to return a mock where exists()=true but json() throws ENOENT.
     await cleanupConfigFiles()
     Bun.env[ENV_VAR] = "true"
 
-    // Using a non-existent file triggers the catch-block with ENOENT.
-    // In strict mode, ENOENT should be handled gracefully (return defaults), not throw.
+    // Create a mock file object that simulates TOCTOU race
+    const mockFile = {
+      exists: async () => true, // File "exists" at this point
+      json: async () => {
+        // File "disappeared" by the time we try to read it - simulate ENOENT
+        const error = new Error("No such file or directory") as Error & { code: string }
+        error.code = "ENOENT"
+        throw error
+      },
+    }
+
+    // Override Bun.file to return our mock for the config filename
+    const originalBunFileFn = Bun.file
+    // @ts-expect-error - we're intentionally shadowing Bun.file for testing
+    Bun.file = (filename: string) => {
+      if (filename === ".bun-scan.json" || filename === ".bun-scan.config.json") {
+        return mockFile
+      }
+      return originalBunFileFn(filename)
+    }
+
+    // Store restore function
+    mockRestore = () => {
+      Bun.file = originalBunFileFn
+    }
+
+    // In strict mode, TOCTOU race (ENOENT) should NOT throw - return defaults instead
     const { loadConfig } = await import("../config.js")
     const config = await loadConfig()
-    expect(config.failOnScannerError).toBe(true)
+
+    // Should return default config, not throw
     expect(config.source).toBe("osv")
+    expect(config.failOnScannerError).toBe(true) // from env var
   })
 
   test("still throws on parse errors in strict mode", async () => {
@@ -182,8 +215,9 @@ describe("CR6 TOCTOU race condition", () => {
     await expect(loadConfig()).rejects.toThrow()
   })
 
-  test("ENOENT error from missing file does not throw in strict mode", async () => {
-    // Ensure no config files exist
+  test("ENOENT from truly missing file does not throw in strict mode", async () => {
+    // When file truly doesn't exist (not TOCTOU), exists() returns false and we get early return.
+    // This should not throw in strict mode - missing config is acceptable.
     await cleanupConfigFiles()
     Bun.env[ENV_VAR] = "true"
 
