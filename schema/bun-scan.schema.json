@@ -69,6 +69,11 @@
       "default": true,
       "description": "Report warning-level advisories to Bun (causes install prompt). Set to false to print warnings without prompting."
     },
+    "failOnScannerError": {
+      "type": "boolean",
+      "default": false,
+      "description": "Fail on scanner errors and block install. When true, any scanner error blocks installation instead of allowing it to proceed silently. The BUN_SCAN_FAIL_ON_SCANNER_ERROR environment variable overrides this setting. Recommended for CI environments."
+    },
     "osv": {
       "type": "object",
       "description": "OSV.dev source configuration",
