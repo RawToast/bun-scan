@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import { loadConfig } from "../config.js"
 
+const ENV_VAR = "BUN_SCAN_FAIL_ON_SCANNER_ERROR"
+
 /**
  * Helper to write a config file for testing
  */
@@ -27,11 +29,21 @@ async function cleanupConfigFiles(): Promise<void> {
 }
 
 describe("Config", () => {
-  beforeEach(async () => {
-    await cleanupConfigFiles()
+  let originalEnvValue: string | undefined
+
+  beforeEach(() => {
+    // Snapshot the original env value for test isolation
+    originalEnvValue = Bun.env[ENV_VAR]
+    delete Bun.env[ENV_VAR]
   })
 
   afterEach(async () => {
+    // Restore the original env value instead of just deleting
+    if (originalEnvValue === undefined) {
+      delete Bun.env[ENV_VAR]
+    } else {
+      Bun.env[ENV_VAR] = originalEnvValue
+    }
     await cleanupConfigFiles()
   })
 
@@ -79,24 +91,16 @@ describe("Config", () => {
 
     test("config file overrides env var for failOnScannerError", async () => {
       await writeConfigFile({ failOnScannerError: true })
-      process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "false"
-      try {
-        const config = await loadConfig()
-        expect(config.failOnScannerError).toBe(true)
-      } finally {
-        delete process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR
-      }
+      Bun.env[ENV_VAR] = "false"
+      const config = await loadConfig()
+      expect(config.failOnScannerError).toBe(true)
     })
 
     test("config file false overrides env var true for failOnScannerError", async () => {
       await writeConfigFile({ failOnScannerError: false })
-      process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
-      try {
-        const config = await loadConfig()
-        expect(config.failOnScannerError).toBe(false)
-      } finally {
-        delete process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR
-      }
+      Bun.env[ENV_VAR] = "true"
+      const config = await loadConfig()
+      expect(config.failOnScannerError).toBe(false)
     })
 
     test("defaults to false when no config file exists", async () => {
@@ -105,25 +109,23 @@ describe("Config", () => {
     })
 
     test("env var is used when no config file exists", async () => {
-      process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
-      try {
-        const config = await loadConfig()
-        expect(config.failOnScannerError).toBe(true)
-      } finally {
-        delete process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR
-      }
+      Bun.env[ENV_VAR] = "true"
+      const config = await loadConfig()
+      expect(config.failOnScannerError).toBe(true)
+    })
+
+    test("invalid env var value is treated as unset", async () => {
+      Bun.env[ENV_VAR] = "wat"
+      const config = await loadConfig()
+      expect(config.failOnScannerError).toBe(false)
     })
   })
 
   describe("failOnScannerError strict config loading", () => {
     test("throws on malformed config when env var is true", async () => {
       await Bun.write(".bun-scan.json", "{ invalid json")
-      process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
-      try {
-        await expect(loadConfig()).rejects.toThrow()
-      } finally {
-        delete process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR
-      }
+      Bun.env[ENV_VAR] = "true"
+      await expect(loadConfig()).rejects.toThrow()
     })
 
     test("does not throw on malformed config when env var is not set", async () => {
@@ -133,13 +135,9 @@ describe("Config", () => {
     })
 
     test("does not throw on missing config when env var is true", async () => {
-      process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
-      try {
-        const config = await loadConfig()
-        expect(config.failOnScannerError).toBe(true)
-      } finally {
-        delete process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR
-      }
+      Bun.env[ENV_VAR] = "true"
+      const config = await loadConfig()
+      expect(config.failOnScannerError).toBe(true)
     })
   })
 })

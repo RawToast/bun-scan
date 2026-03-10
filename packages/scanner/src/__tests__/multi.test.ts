@@ -165,7 +165,24 @@ describe("MultiSourceScanner", () => {
         failOnScannerError: true,
       })
 
-      await expect(scanner.scan([makePackage("pkg", "1.0.0")])).rejects.toThrow(/scan failed/i)
+      try {
+        await scanner.scan([makePackage("pkg", "1.0.0")])
+        expect.unreachable("should have thrown")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        const message = (error as Error).message
+
+        // Verify overall pattern matches
+        expect(message).toMatch(/scan failed/i)
+
+        // Verify both source names appear
+        expect(message).toContain("osv")
+        expect(message).toContain("npm")
+
+        // Verify both error reasons appear
+        expect(message).toContain("timeout")
+        expect(message).toContain("network error")
+      }
     })
 
     test("error message includes source names and reasons", async () => {

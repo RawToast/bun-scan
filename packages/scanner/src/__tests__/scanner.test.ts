@@ -1,7 +1,29 @@
-import { afterEach, describe, expect, test } from "bun:test"
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test"
+import { resetSleep, setSleep } from "@repo/core"
 import { scanner } from ".."
 
+const ENV_VAR = "BUN_SCAN_FAIL_ON_SCANNER_ERROR"
+
 describe("Scanner", () => {
+  let originalEnvValue: string | undefined
+
+  beforeEach(() => {
+    // Snapshot the original env value for test isolation
+    originalEnvValue = Bun.env[ENV_VAR]
+    delete Bun.env[ENV_VAR]
+  })
+
+  afterEach(async () => {
+    // Restore the original env value instead of just deleting
+    if (originalEnvValue === undefined) {
+      delete Bun.env[ENV_VAR]
+    } else {
+      Bun.env[ENV_VAR] = originalEnvValue
+    }
+    const { unlink } = await import("node:fs/promises")
+    await unlink(".bun-scan.json").catch(() => {})
+  })
+
   describe("Interface Compliance", () => {
     test("implements Bun.Security.Scanner interface", () => {
       expect(scanner).toBeDefined()
@@ -175,7 +197,7 @@ describe("Scanner", () => {
 
       const result = await scanner.scan({ packages })
 
-      expect(Array.isArray(result)).toBe(true)
+      expect(result).toEqual([])
     })
 
     test("never throws errors", async () => {
@@ -306,6 +328,9 @@ describe("Scanner", () => {
   })
 
   describe("failOnScannerError behavior", () => {
+    beforeAll(() => setSleep(() => Promise.resolve()))
+    afterAll(() => resetSleep())
+
     afterEach(async () => {
       delete process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR
       const { unlink } = await import("node:fs/promises")
@@ -332,7 +357,7 @@ describe("Scanner", () => {
       ]
 
       await expect(scanner.scan({ packages })).rejects.toThrow()
-    }, 30000)
+    }, 5000)
 
     test("re-throws scanner errors when env var is set", async () => {
       process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
@@ -354,7 +379,7 @@ describe("Scanner", () => {
       ]
 
       await expect(scanner.scan({ packages })).rejects.toThrow()
-    }, 30000)
+    }, 5000)
 
     test("does not throw when failOnScannerError is false (default)", async () => {
       await Bun.write(
@@ -376,7 +401,7 @@ describe("Scanner", () => {
 
       const result = await scanner.scan({ packages })
       expect(Array.isArray(result)).toBe(true)
-    }, 30000)
+    }, 5000)
 
     test("re-throws on malformed config when env var is set (bootstrap path)", async () => {
       process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
