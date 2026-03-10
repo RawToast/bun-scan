@@ -3,7 +3,7 @@
  * Queries npm's bulk advisory endpoint for package vulnerabilities
  */
 
-import type { VulnerabilitySource, IgnoreConfig, NpmConfig } from "@repo/core"
+import type { VulnerabilitySource, IgnoreConfig, NpmConfig, IgnorePackageRule } from "@repo/core"
 import { logger } from "@repo/core"
 import { createNpmAuditClient } from "./client.js"
 import { createAdvisoryProcessor } from "./processor.js"
@@ -83,7 +83,10 @@ export function createNpmSource(
     // - { packages: {...}, failOnScannerError: true } - legacy packages config with new-format flag
     // - { ignore: {...}, failOnScannerError: true } - proper new format (pass through)
     const ignoreFromOptions = options.ignore
-    const packagesFromOptions = (options as IgnoreConfig).packages
+    const packagesFromOptions: Record<string, IgnorePackageRule> | undefined =
+      "packages" in options
+        ? (options.packages as Record<string, IgnorePackageRule> | undefined)
+        : undefined
 
     // Determine ignore config - handle both object and array forms
     if (ignoreFromOptions !== undefined) {

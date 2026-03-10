@@ -1,4 +1,4 @@
-import type { VulnerabilitySource, IgnoreConfig, OsvConfig } from "@repo/core"
+import type { VulnerabilitySource, IgnoreConfig, OsvConfig, IgnorePackageRule } from "@repo/core"
 import { logger } from "@repo/core"
 import { createOSVClient } from "./client.js"
 import { createVulnerabilityProcessor } from "./processor.js"
@@ -88,7 +88,10 @@ export function createOSVSource(
     // - { packages: {...}, failOnScannerError: true } - legacy packages config with new-format flag
     // - { ignore: {...}, failOnScannerError: true } - proper new format (pass through)
     const ignoreFromOptions = options.ignore
-    const packagesFromOptions = (options as IgnoreConfig).packages
+    const packagesFromOptions: Record<string, IgnorePackageRule> | undefined =
+      "packages" in options
+        ? (options.packages as Record<string, IgnorePackageRule> | undefined)
+        : undefined
 
     // Determine ignore config - handle both object and array forms
     if (ignoreFromOptions !== undefined) {
