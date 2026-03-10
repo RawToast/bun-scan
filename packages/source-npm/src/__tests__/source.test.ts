@@ -5,6 +5,14 @@ import { NpmAuditResponseSchema } from "../schema.js"
 import { createAdvisoryProcessor } from "../processor.js"
 import { setSleep, resetSleep } from "@repo/core"
 
+// Helper to create a proper Bun.Security.Package
+const makePackage = (name: string, version: string): Bun.Security.Package => ({
+  name,
+  version,
+  tarball: `https://registry.npmjs.org/${name}/-/${name}-${version}.tgz`,
+  requestedRange: "*",
+})
+
 describe("NpmSource", () => {
   beforeEach(() => {
     process.env.BUN_SCAN_LOG_LEVEL = "error"
@@ -153,14 +161,6 @@ describe("npm bulk response parsing", () => {
 describe("AdvisoryProcessor ignore configuration", () => {
   beforeEach(() => {
     process.env.BUN_SCAN_LOG_LEVEL = "error"
-  })
-
-  // Helper to create a proper Bun.Security.Package
-  const makePackage = (name: string, version: string): Bun.Security.Package => ({
-    name,
-    version,
-    tarball: `https://registry.npmjs.org/${name}/-/${name}-${version}.tgz`,
-    requestedRange: "*",
   })
 
   test("ignores globally ignored advisories by id", () => {
@@ -331,13 +331,6 @@ describe("AdvisoryProcessor ignore configuration", () => {
 })
 
 describe("NpmSource discriminator regression tests", () => {
-  const makePackage = (name: string, version: string): Bun.Security.Package => ({
-    name,
-    version,
-    tarball: `https://registry.npmjs.org/${name}/-/${name}-${version}.tgz`,
-    requestedRange: "*",
-  })
-
   // Helper to mock bulk fetch - supports error throw or success response
   const withMockedBulkFetch = async (
     options: { error: string } | { response: Record<string, unknown> },

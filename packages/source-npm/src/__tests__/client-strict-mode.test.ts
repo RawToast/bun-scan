@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "bun:test"
+import { beforeEach, afterEach, describe, expect, test } from "bun:test"
 import { createNpmAuditClient } from "../client.js"
 
 describe("NpmAuditClient strict mode behavior", () => {
@@ -9,8 +9,19 @@ describe("NpmAuditClient strict mode behavior", () => {
     requestedRange: "*",
   })
 
+  let originalLogLevel: string | undefined
+
   beforeEach(() => {
+    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
     process.env.BUN_SCAN_LOG_LEVEL = "error"
+  })
+
+  afterEach(() => {
+    if (originalLogLevel === undefined) {
+      delete process.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
   })
 
   test("rethrows on batch query failure when failOnScannerError is true", async () => {
