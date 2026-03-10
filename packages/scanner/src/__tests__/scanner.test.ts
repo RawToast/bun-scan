@@ -331,12 +331,6 @@ describe("Scanner", () => {
     beforeAll(() => setSleep(() => Promise.resolve()))
     afterAll(() => resetSleep())
 
-    afterEach(async () => {
-      delete process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR
-      const { unlink } = await import("node:fs/promises")
-      await unlink(".bun-scan.json").catch(() => {})
-    })
-
     test("re-throws scanner errors when failOnScannerError is true in config", async () => {
       await Bun.write(
         ".bun-scan.json",
