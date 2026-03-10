@@ -394,7 +394,7 @@ describe("Scanner", () => {
       ]
 
       const result = await scanner.scan({ packages })
-      expect(Array.isArray(result)).toBe(true)
+      expect(result).toEqual([])
     }, 5000)
 
     test("re-throws on malformed config when env var is set (bootstrap path)", async () => {
