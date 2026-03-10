@@ -225,7 +225,7 @@ export declare function createNpmSource(
 
 /** Create a vulnerability source by type */
 export declare function createSource(
-  type: SourceType,
+  type: "osv" | "npm",
   config: Config,
   failOnScannerError?: boolean,
 ): VulnerabilitySource
