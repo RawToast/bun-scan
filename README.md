@@ -247,7 +247,7 @@ bun test
 bun test --coverage
 
 # Type checking
-bun run typecheck
+bun run compile
 
 # Linting
 bun run lint
