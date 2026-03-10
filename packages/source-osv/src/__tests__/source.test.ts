@@ -271,4 +271,32 @@ describe("OSVSource discriminator regression tests", () => {
       globalThis.fetch = originalFetch
     }
   })
+
+  // Failure-path regression test: verify failOnScannerError survives in mixed calls
+  test("mixed legacy ignore array with failOnScannerError rejects on failure", async () => {
+    const source = createOSVSource({ ignore: ["CVE-2024-1234"], failOnScannerError: true })
+    const packages = [makePackage("pkg-a", "0.5.0")]
+
+    // Mock fetch to throw for both batch and individual queries (single package uses /query)
+    const originalFetch = globalThis.fetch
+    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
+      const urlStr = url.toString()
+      if (
+        urlStr.includes("querybatch") ||
+        (urlStr.includes("/query") && !urlStr.includes("querybatch"))
+      ) {
+        throw new Error("Network error during batch query")
+      }
+      return originalFetch(url, options)
+    }
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = mockFetch
+
+    try {
+      // Should throw even with ignore config present
+      await expect(source.scan(packages)).rejects.toThrow("Network error during batch query")
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
 })

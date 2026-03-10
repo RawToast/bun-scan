@@ -338,6 +338,29 @@ describe("NpmSource discriminator regression tests", () => {
     requestedRange: "*",
   })
 
+  // Helper to mock bulk fetch failure - throws for bulk advisory URLs
+  const withMockedBulkFetch = async (
+    errorMessage: string,
+    fn: () => Promise<unknown>,
+  ): Promise<void> => {
+    const originalFetch = globalThis.fetch
+    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
+      const urlStr = url.toString()
+      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
+        throw new Error(errorMessage)
+      }
+      return originalFetch(url, options)
+    }
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = mockFetch
+
+    try {
+      await fn()
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  }
+
   beforeEach(() => {
     process.env.BUN_SCAN_LOG_LEVEL = "error"
     setSleep(async () => {})
@@ -349,133 +372,58 @@ describe("NpmSource discriminator regression tests", () => {
 
   test("createNpmSource({ failOnScannerError: true }) throws on bulk query failure", async () => {
     const source = createNpmSource({ failOnScannerError: true })
+    const packages = [makePackage("pkg-a", "1.0.0"), makePackage("pkg-b", "2.0.0")]
 
-    // Mock fetch to throw for bulk advisory queries
-    const originalFetch = globalThis.fetch
-    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
-      const urlStr = url.toString()
-      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
-        throw new Error("Network error during bulk query")
-      }
-      return originalFetch(url, options)
-    }
-    // @ts-expect-error - assigning mock for testing
-    globalThis.fetch = mockFetch
-
-    try {
-      const packages = [makePackage("pkg-a", "1.0.0"), makePackage("pkg-b", "2.0.0")]
-
+    await withMockedBulkFetch("Network error during bulk query", async () => {
       // Should throw because failOnScannerError was correctly passed through via discriminator
       await expect(source.scan(packages)).rejects.toThrow("Network error during bulk query")
-    } finally {
-      globalThis.fetch = originalFetch
-    }
+    })
   })
 
   test("createNpmSource({ failOnScannerError: false }) continues on bulk query failure", async () => {
     const source = createNpmSource({ failOnScannerError: false })
+    const packages = [makePackage("pkg-a", "1.0.0"), makePackage("pkg-b", "2.0.0")]
 
-    // Mock fetch to throw for bulk advisory queries
-    const originalFetch = globalThis.fetch
-    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
-      const urlStr = url.toString()
-      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
-        throw new Error("Network error during bulk query")
-      }
-      return originalFetch(url, options)
-    }
-    // @ts-expect-error - assigning mock for testing
-    globalThis.fetch = mockFetch
-
-    try {
-      const packages = [makePackage("pkg-a", "1.0.0"), makePackage("pkg-b", "2.0.0")]
-
+    await withMockedBulkFetch("Network error during bulk query", async () => {
       // Should not throw, should return empty results
       const result = await source.scan(packages)
       expect(result).toEqual([])
-    } finally {
-      globalThis.fetch = originalFetch
-    }
+    })
   })
 
   test("createNpmSource({ failOnScannerError: true, npm: {...} }) throws on bulk query failure", async () => {
     const source = createNpmSource({ failOnScannerError: true, npm: { timeoutMs: 30000 } })
+    const packages = [makePackage("pkg-a", "1.0.0")]
 
-    // Mock fetch to throw for bulk advisory queries
-    const originalFetch = globalThis.fetch
-    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
-      const urlStr = url.toString()
-      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
-        throw new Error("Network error during bulk query")
-      }
-      return originalFetch(url, options)
-    }
-    // @ts-expect-error - assigning mock for testing
-    globalThis.fetch = mockFetch
-
-    try {
-      const packages = [makePackage("pkg-a", "1.0.0")]
-
+    await withMockedBulkFetch("Network error during bulk query", async () => {
       // Should throw because failOnScannerError was correctly passed through
       await expect(source.scan(packages)).rejects.toThrow("Network error during bulk query")
-    } finally {
-      globalThis.fetch = originalFetch
-    }
+    })
   })
 
   test("legacy createNpmSource({ ignore: [...] }) does not throw on failure (discriminator regression)", async () => {
     // This tests that legacy format (plain IgnoreConfig) is correctly identified
     // and failOnScannerError is NOT set (defaults to undefined/false)
     const source = createNpmSource({ ignore: ["CVE-2024-1234"] }) // Legacy: ignore as array
+    const packages = [makePackage("pkg-a", "1.0.0")]
 
-    // Mock fetch to throw for bulk advisory queries
-    const originalFetch = globalThis.fetch
-    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
-      const urlStr = url.toString()
-      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
-        throw new Error("Network error during bulk query")
-      }
-      return originalFetch(url, options)
-    }
-    // @ts-expect-error - assigning mock for testing
-    globalThis.fetch = mockFetch
-
-    try {
-      const packages = [makePackage("pkg-a", "1.0.0")]
-
+    await withMockedBulkFetch("Network error during bulk query", async () => {
       // Legacy format should NOT throw (failOnScannerError is undefined/false by default)
       const result = await source.scan(packages)
       expect(result).toEqual([])
-    } finally {
-      globalThis.fetch = originalFetch
-    }
+    })
   })
 
   test("legacy createNpmSource(ignoreObject) does not throw on failure (discriminator regression)", async () => {
     // Legacy format with ignore as object (but without new format keys)
     const source = createNpmSource({ packages: { "pkg-a": { vulnerabilities: [] } } })
+    const packages = [makePackage("pkg-a", "1.0.0")]
 
-    // Mock fetch to throw for bulk advisory queries
-    const originalFetch = globalThis.fetch
-    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
-      const urlStr = url.toString()
-      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
-        throw new Error("Network error during bulk query")
-      }
-      return originalFetch(url, options)
-    }
-    // @ts-expect-error - assigning mock for testing
-    globalThis.fetch = mockFetch
-
-    try {
-      const packages = [makePackage("pkg-a", "1.0.0")]
-
+    await withMockedBulkFetch("Network error during bulk query", async () => {
       // Legacy format should NOT throw (failOnScannerError is undefined/false by default)
       const result = await source.scan(packages)
       expect(result).toEqual([])
-    } finally {
-      globalThis.fetch = originalFetch
-    }
+    })
   })
 
   test("mixed legacy ignore array with failOnScannerError preserves ignore config", async () => {
@@ -547,5 +495,29 @@ describe("NpmSource discriminator regression tests", () => {
     } finally {
       globalThis.fetch = originalFetch
     }
+  })
+
+  // Failure-path regression tests: verify failOnScannerError survives in mixed calls
+  test("mixed legacy ignore array with failOnScannerError rejects on failure", async () => {
+    const source = createNpmSource({ ignore: ["CVE-2024-1234"], failOnScannerError: true })
+    const packages = [makePackage("pkg-a", "0.5.0")]
+
+    // Should throw even with ignore config present
+    await withMockedBulkFetch("Network error during bulk query", async () => {
+      await expect(source.scan(packages)).rejects.toThrow("Network error during bulk query")
+    })
+  })
+
+  test("mixed legacy packages config with failOnScannerError rejects on failure", async () => {
+    const source = createNpmSource({
+      packages: { "pkg-a": { vulnerabilities: ["CVE-2024-5678"] } },
+      failOnScannerError: true,
+    })
+    const packages = [makePackage("pkg-a", "0.5.0")]
+
+    // Should throw even with packages config present
+    await withMockedBulkFetch("Network error during bulk query", async () => {
+      await expect(source.scan(packages)).rejects.toThrow("Network error during bulk query")
+    })
   })
 })
