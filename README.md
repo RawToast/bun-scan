@@ -135,6 +135,8 @@ export NPM_SCANNER_TIMEOUT_MS=30000
 
 **Precedence**: Config file values override environment variables, which override defaults.
 
+**Exception**: `BUN_SCAN_FAIL_ON_SCANNER_ERROR` is a documented exception — when set, this environment variable always takes precedence over any config file value. This enables strict mode to be enabled via CI/CD without modifying project configuration files.
+
 ### 5. Optional: Vulnerability Sources
 
 Configure which vulnerability database to query:

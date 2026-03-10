@@ -145,17 +145,16 @@ describe("Config", () => {
 
 // CR6: Test for TOCTOU race condition (file disappears between exists() and json())
 describe("CR6 TOCTOU race condition", () => {
-  const originalEnvValue = Bun.env[ENV_VAR]
+  let originalEnvValue: string | undefined
 
-  // Track if we're in a test that mocked Bun.file
-  let mockRestore: (() => void) | null = null
+  beforeEach(async () => {
+    // Per-test env/file hygiene matching main config suite
+    originalEnvValue = Bun.env[ENV_VAR]
+    delete Bun.env[ENV_VAR]
+    await cleanupConfigFiles()
+  })
 
   afterEach(async () => {
-    // Restore Bun.file if we mocked it
-    if (mockRestore) {
-      mockRestore()
-      mockRestore = null
-    }
     // Restore env and cleanup
     if (originalEnvValue === undefined) {
       delete Bun.env[ENV_VAR]
@@ -165,16 +164,26 @@ describe("CR6 TOCTOU race condition", () => {
     await cleanupConfigFiles()
   })
 
-  test("does not throw when file vanishes between exists() and json() in strict mode", async () => {
+  test("does not throw when file vanishes between exists() and json() in strict mode (catch-path)", async () => {
     // This is the actual TOCTOU race: file exists when exists() runs, but is gone when json() runs.
     // We simulate this by mocking Bun.file to return a mock where exists()=true but json() throws ENOENT.
-    await cleanupConfigFiles()
     Bun.env[ENV_VAR] = "true"
+
+    // Track call order to prove catch-path was reached
+    let existsCalled = false
+    let jsonCalled = false
+    let callOrder: string[] = []
 
     // Create a mock file object that simulates TOCTOU race
     const mockFile = {
-      exists: async () => true, // File "exists" at this point
+      exists: async () => {
+        existsCalled = true
+        callOrder.push("exists")
+        return true // File "exists" at this point
+      },
       json: async () => {
+        jsonCalled = true
+        callOrder.push("json")
         // File "disappeared" by the time we try to read it - simulate ENOENT
         const error = new Error("No such file or directory") as Error & { code: string }
         error.code = "ENOENT"
@@ -192,14 +201,24 @@ describe("CR6 TOCTOU race condition", () => {
       return originalBunFileFn(filename)
     }
 
-    // Store restore function
-    mockRestore = () => {
-      Bun.file = originalBunFileFn
-    }
-
     // In strict mode, TOCTOU race (ENOENT) should NOT throw - return defaults instead
     const { loadConfig } = await import("../config.js")
     const config = await loadConfig()
+
+    // Restore Bun.file
+    Bun.file = originalBunFileFn
+
+    // Prove catch-path was reached: exists() returned true AND json() threw ENOENT
+    // The config loader tries both .bun-scan.json and .bun-scan.config.json
+    // At minimum, we should see exists and json both being called at least once
+    expect(existsCalled).toBe(true)
+    expect(jsonCalled).toBe(true)
+    // Verify ordering: for any pair of exists->json, json should follow exists
+    // We check this by ensuring "exists,json" appears as a subsequence
+    const hasValidSequence = callOrder.some(
+      (call, i) => call === "exists" && callOrder[i + 1] === "json",
+    )
+    expect(hasValidSequence).toBe(true)
 
     // Should return default config, not throw
     expect(config.source).toBe("osv")
@@ -215,15 +234,42 @@ describe("CR6 TOCTOU race condition", () => {
     await expect(loadConfig()).rejects.toThrow()
   })
 
-  test("ENOENT from truly missing file does not throw in strict mode", async () => {
+  test("ENOENT from truly missing file does not throw in strict mode (early-return path)", async () => {
     // When file truly doesn't exist (not TOCTOU), exists() returns false and we get early return.
     // This should not throw in strict mode - missing config is acceptable.
-    await cleanupConfigFiles()
     Bun.env[ENV_VAR] = "true"
+
+    // Track that no file reading was attempted
+    let existsCalled = false
+
+    const originalBunFileFn = Bun.file
+    // @ts-expect-error - we're intentionally shadowing Bun.file for testing
+    Bun.file = (filename: string) => {
+      if (filename === ".bun-scan.json" || filename === ".bun-scan.config.json") {
+        return {
+          exists: async () => {
+            existsCalled = true
+            return false // File doesn't exist - early return path
+          },
+          json: async () => {
+            throw new Error("Should not be called")
+          },
+        }
+      }
+      return originalBunFileFn(filename)
+    }
 
     const { loadConfig } = await import("../config.js")
     // This should NOT throw even in strict mode - missing config is not fatal
     const config = await loadConfig()
+
+    // Restore Bun.file
+    Bun.file = originalBunFileFn
+
+    // Prove early-return path: exists was called but json was NOT called
+    expect(existsCalled).toBe(true)
+
+    // Should return default config (env var still applies)
     expect(config.source).toBe("osv")
     expect(config.failOnScannerError).toBe(true)
   })

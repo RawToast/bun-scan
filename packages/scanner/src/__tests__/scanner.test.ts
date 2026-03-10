@@ -427,5 +427,32 @@ describe("Scanner", () => {
 
       await expect(scanner.scan({ packages })).rejects.toThrow(/failed to load config/)
     })
+
+    test("env var overrides config file when they disagree (config=false, env=true)", async () => {
+      // Config file says: failOnScannerError = false
+      // Env var says: BUN_SCAN_FAIL_ON_SCANNER_ERROR = true
+      // Env should win - scanner should throw
+      await Bun.write(
+        ".bun-scan.json",
+        JSON.stringify({
+          failOnScannerError: false,
+          source: "npm",
+          npm: { registryUrl: "http://127.0.0.1:1", timeoutMs: 1000 },
+        }),
+      )
+      Bun.env[ENV_VAR] = "true"
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      // Env wins: scanner should throw because env=true overrides config=false
+      await expect(scanner.scan({ packages })).rejects.toThrow()
+    }, 5000)
   })
 })
