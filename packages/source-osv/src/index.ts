@@ -35,7 +35,10 @@ export { isPackageAffected } from "./semver.js"
 
 /** Options for creating OSV source */
 export interface CreateOSVSourceOptions {
-  ignore?: IgnoreConfig
+  /** Legacy array form or new object form */
+  ignore?: IgnoreConfig | string[]
+  /** Legacy packages config (when ignore is not an object) */
+  packages?: Record<string, IgnorePackageRule>
   osv?: OsvConfig
   /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
   failOnScannerError?: boolean
@@ -88,10 +91,7 @@ export function createOSVSource(
     // - { packages: {...}, failOnScannerError: true } - legacy packages config with new-format flag
     // - { ignore: {...}, failOnScannerError: true } - proper new format (pass through)
     const ignoreFromOptions = options.ignore
-    const packagesFromOptions: Record<string, IgnorePackageRule> | undefined =
-      "packages" in options
-        ? (options.packages as Record<string, IgnorePackageRule> | undefined)
-        : undefined
+    const packagesFromOptions = options.packages
 
     // Determine ignore config - handle both object and array forms
     if (ignoreFromOptions !== undefined) {

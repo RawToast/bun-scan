@@ -30,7 +30,10 @@ export { NPM_AUDIT_API, HTTP, SECURITY } from "./constants.js"
 
 /** Options for creating npm source */
 export interface CreateNpmSourceOptions {
-  ignore?: IgnoreConfig
+  /** Legacy array form or new object form */
+  ignore?: IgnoreConfig | string[]
+  /** Legacy packages config (when ignore is not an object) */
+  packages?: Record<string, IgnorePackageRule>
   npm?: NpmConfig
   /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
   failOnScannerError?: boolean
@@ -83,10 +86,7 @@ export function createNpmSource(
     // - { packages: {...}, failOnScannerError: true } - legacy packages config with new-format flag
     // - { ignore: {...}, failOnScannerError: true } - proper new format (pass through)
     const ignoreFromOptions = options.ignore
-    const packagesFromOptions: Record<string, IgnorePackageRule> | undefined =
-      "packages" in options
-        ? (options.packages as Record<string, IgnorePackageRule> | undefined)
-        : undefined
+    const packagesFromOptions = options.packages
 
     // Determine ignore config - handle both object and array forms
     if (ignoreFromOptions !== undefined) {
