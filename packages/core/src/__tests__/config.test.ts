@@ -202,11 +202,14 @@ describe("CR6 TOCTOU race condition", () => {
     }
 
     // In strict mode, TOCTOU race (ENOENT) should NOT throw - return defaults instead
-    const { loadConfig } = await import("../config.js")
-    const config = await loadConfig()
-
-    // Restore Bun.file
-    Bun.file = originalBunFileFn
+    let config: Awaited<ReturnType<typeof import("../config.js").loadConfig>> | undefined
+    try {
+      const { loadConfig } = await import("../config.js")
+      config = await loadConfig()
+    } finally {
+      // Restore Bun.file - guaranteed even if assertion fails
+      Bun.file = originalBunFileFn
+    }
 
     // Prove catch-path was reached: exists() returned true AND json() threw ENOENT
     // The config loader tries both .bun-scan.json and .bun-scan.config.json
@@ -259,12 +262,15 @@ describe("CR6 TOCTOU race condition", () => {
       return originalBunFileFn(filename)
     }
 
-    const { loadConfig } = await import("../config.js")
-    // This should NOT throw even in strict mode - missing config is not fatal
-    const config = await loadConfig()
-
-    // Restore Bun.file
-    Bun.file = originalBunFileFn
+    let config: Awaited<ReturnType<typeof import("../config.js").loadConfig>> | undefined
+    try {
+      const { loadConfig } = await import("../config.js")
+      // This should NOT throw even in strict mode - missing config is not fatal
+      config = await loadConfig()
+    } finally {
+      // Restore Bun.file - guaranteed even if assertion fails
+      Bun.file = originalBunFileFn
+    }
 
     // Prove early-return path: exists was called but json was NOT called
     expect(existsCalled).toBe(true)
