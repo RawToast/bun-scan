@@ -3,14 +3,22 @@ import type { VulnerabilitySource } from "@repo/core"
 import { createOSVSource } from "../index.js"
 import { setSleep, resetSleep } from "@repo/core"
 
+let originalLogLevel: string | undefined
+
 describe("OSVSource", () => {
   beforeEach(() => {
+    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
     process.env.BUN_SCAN_LOG_LEVEL = "error"
     setSleep(async () => {})
   })
 
   afterEach(() => {
     resetSleep()
+    if (originalLogLevel === undefined) {
+      delete process.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
   })
 
   test("implements VulnerabilitySource interface", () => {
@@ -35,12 +43,18 @@ describe("OSVSource discriminator regression tests", () => {
   })
 
   beforeEach(() => {
+    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
     process.env.BUN_SCAN_LOG_LEVEL = "error"
     setSleep(async () => {})
   })
 
   afterEach(() => {
     resetSleep()
+    if (originalLogLevel === undefined) {
+      delete process.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
   })
 
   test("createOSVSource({ failOnScannerError: true }) throws on batch query failure", async () => {

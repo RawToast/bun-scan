@@ -13,14 +13,22 @@ const makePackage = (name: string, version: string): Bun.Security.Package => ({
   requestedRange: "*",
 })
 
+let originalLogLevel: string | undefined
+
 describe("NpmSource", () => {
   beforeEach(() => {
+    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
     process.env.BUN_SCAN_LOG_LEVEL = "error"
     setSleep(async () => {})
   })
 
   afterEach(() => {
     resetSleep()
+    if (originalLogLevel === undefined) {
+      delete process.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
   })
 
   test("implements VulnerabilitySource interface", () => {
@@ -160,7 +168,16 @@ describe("npm bulk response parsing", () => {
 
 describe("AdvisoryProcessor ignore configuration", () => {
   beforeEach(() => {
+    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
     process.env.BUN_SCAN_LOG_LEVEL = "error"
+  })
+
+  afterEach(() => {
+    if (originalLogLevel === undefined) {
+      delete process.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
   })
 
   test("ignores globally ignored advisories by id", () => {
@@ -358,12 +375,18 @@ describe("NpmSource discriminator regression tests", () => {
   }
 
   beforeEach(() => {
+    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
     process.env.BUN_SCAN_LOG_LEVEL = "error"
     setSleep(async () => {})
   })
 
   afterEach(() => {
     resetSleep()
+    if (originalLogLevel === undefined) {
+      delete process.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
   })
 
   test("createNpmSource({ failOnScannerError: true }) throws on bulk query failure", async () => {

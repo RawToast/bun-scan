@@ -2,6 +2,8 @@ import { beforeEach, afterEach, describe, expect, test } from "bun:test"
 import { createOSVClient } from "../client.js"
 import { setSleep, resetSleep } from "@repo/core"
 
+let originalLogLevel: string | undefined
+
 describe("OSVClient strict mode behavior", () => {
   const makePackage = (name: string, version: string): Bun.Security.Package => ({
     name,
@@ -11,6 +13,7 @@ describe("OSVClient strict mode behavior", () => {
   })
 
   beforeEach(() => {
+    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
     process.env.BUN_SCAN_LOG_LEVEL = "error"
     // Stub sleep to avoid slow tests due to retries
     setSleep(async () => {})
@@ -18,6 +21,11 @@ describe("OSVClient strict mode behavior", () => {
 
   afterEach(() => {
     resetSleep()
+    if (originalLogLevel === undefined) {
+      delete process.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
   })
 
   test("rethrows on batch query failure when failOnScannerError is true", async () => {
