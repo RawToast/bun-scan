@@ -91,18 +91,18 @@ describe("Config", () => {
       expect(config.failOnScannerError).toBe(true)
     })
 
-    test("config file overrides env var for failOnScannerError", async () => {
+    test("env var overrides config file for failOnScannerError", async () => {
       await writeConfigFile({ failOnScannerError: true })
       Bun.env[ENV_VAR] = "false"
       const config = await loadConfig()
-      expect(config.failOnScannerError).toBe(true)
+      expect(config.failOnScannerError).toBe(false)
     })
 
-    test("config file false overrides env var true for failOnScannerError", async () => {
+    test("env var true overrides config file false for failOnScannerError", async () => {
       await writeConfigFile({ failOnScannerError: false })
       Bun.env[ENV_VAR] = "true"
       const config = await loadConfig()
-      expect(config.failOnScannerError).toBe(false)
+      expect(config.failOnScannerError).toBe(true)
     })
 
     test("defaults to false when no config file exists", async () => {

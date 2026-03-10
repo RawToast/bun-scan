@@ -52,7 +52,7 @@ export const scanner: Bun.Security.Scanner = {
 
   async scan({ packages }) {
     // Resolve strict mode from env first (bootstrap — always available)
-    // Using === true collapses undefined to false, matching original behavior
+    // Env var is the escape hatch and overrides config file later
     let failOnScannerError = parseEnvBoolean(ENV.FAIL_ON_SCANNER_ERROR) === true
 
     try {
@@ -62,8 +62,11 @@ export const scanner: Bun.Security.Scanner = {
       const config = await loadConfig()
       const bunReportWarnings = config.bunReportWarnings ?? CONFIG_DEFAULTS.bunReportWarnings
 
-      // Update from config (config takes precedence over env var)
-      failOnScannerError = config.failOnScannerError ?? failOnScannerError
+      // Update from config, but env var still overrides (escape hatch pattern)
+      // Config file value is used only if env var is not set
+      if (parseEnvBoolean(ENV.FAIL_ON_SCANNER_ERROR) === undefined) {
+        failOnScannerError = config.failOnScannerError ?? failOnScannerError
+      }
 
       // Create vulnerability sources based on config
       const sources = createSources(config.source ?? "osv", config, failOnScannerError)

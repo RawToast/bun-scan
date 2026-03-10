@@ -184,7 +184,7 @@ For CI and compliance environments, enable strict mode to block installation on 
 }
 ```
 
-Or via environment variable (falls back to env if config not set):
+Or via environment variable (overrides config file - escape hatch):
 
 ```bash
 BUN_SCAN_FAIL_ON_SCANNER_ERROR=true bun install
@@ -270,15 +270,15 @@ bun run lint
 
 ### Environment Variables (Fallback)
 
-| Environment Variable             | Default                      | Description                                                  |
-| -------------------------------- | ---------------------------- | ------------------------------------------------------------ |
-| `BUN_SCAN_LOG_LEVEL`             | `info`                       | Logging level: debug, info, warn, error                      |
-| `BUN_SCAN_FAIL_ON_SCANNER_ERROR` | `false`                      | Fail on scanner errors (falls back to env if config not set) |
-| `OSV_API_BASE_URL`               | `https://api.osv.dev/v1`     | OSV API base URL                                             |
-| `OSV_TIMEOUT_MS`                 | `30000`                      | Request timeout in milliseconds                              |
-| `OSV_DISABLE_BATCH`              | `false`                      | Disable batch queries                                        |
-| `NPM_SCANNER_REGISTRY_URL`       | `https://registry.npmjs.org` | npm registry URL                                             |
-| `NPM_SCANNER_TIMEOUT_MS`         | `30000`                      | npm request timeout in milliseconds                          |
+| Environment Variable             | Default                      | Description                                                   |
+| -------------------------------- | ---------------------------- | ------------------------------------------------------------- |
+| `BUN_SCAN_LOG_LEVEL`             | `info`                       | Logging level: debug, info, warn, error                       |
+| `BUN_SCAN_FAIL_ON_SCANNER_ERROR` | `false`                      | Fail on scanner errors (overrides config file - escape hatch) |
+| `OSV_API_BASE_URL`               | `https://api.osv.dev/v1`     | OSV API base URL                                              |
+| `OSV_TIMEOUT_MS`                 | `30000`                      | Request timeout in milliseconds                               |
+| `OSV_DISABLE_BATCH`              | `false`                      | Disable batch queries                                         |
+| `NPM_SCANNER_REGISTRY_URL`       | `https://registry.npmjs.org` | npm registry URL                                              |
+| `NPM_SCANNER_TIMEOUT_MS`         | `30000`                      | npm request timeout in milliseconds                           |
 
 > **Note**: `BUN_SCAN_LOG_LEVEL` must be set via environment variable for runtime control, as the logger initializes before the config file is loaded.
 

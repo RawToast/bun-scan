@@ -81,7 +81,7 @@ export const ConfigSchema = z.object({
   logLevel: z.enum(["debug", "info", "warn", "error"]).optional(),
   /** Report warnings to Bun (causes install prompt). Set false to print only. */
   bunReportWarnings: z.boolean().optional(),
-  /** Fail on scanner errors (block install). Env var used as fallback if not set in config. */
+  /** Fail on scanner errors (block install). Env var overrides config file (escape hatch). */
   failOnScannerError: z.boolean().optional(),
   /** OSV source configuration */
   osv: OsvConfigSchema.optional(),
@@ -192,6 +192,7 @@ function buildEnvConfig(): Partial<Config> {
 /**
  * Merge configuration layers: defaults → env → config file
  * Config file wins over env, env wins over defaults.
+ * EXCEPTION: failOnScannerError env var overrides config file (escape hatch pattern).
  */
 function mergeConfig(fileConfig: Config | null): Config {
   const envConfig = buildEnvConfig()
@@ -217,7 +218,7 @@ function mergeConfig(fileConfig: Config | null): Config {
   if (envConfig.npm?.registryUrl !== undefined) merged.npm!.registryUrl = envConfig.npm.registryUrl
   if (envConfig.npm?.timeoutMs !== undefined) merged.npm!.timeoutMs = envConfig.npm.timeoutMs
 
-  // Layer config file values (if set) - these win
+  // Layer config file values (if set) - these win (except failOnScannerError, see below)
   if (fileConfig) {
     if (fileConfig.source !== undefined) merged.source = fileConfig.source
     if (fileConfig.ignore !== undefined) merged.ignore = fileConfig.ignore
@@ -234,6 +235,12 @@ function mergeConfig(fileConfig: Config | null): Config {
     if (fileConfig.npm?.registryUrl !== undefined)
       merged.npm!.registryUrl = fileConfig.npm.registryUrl
     if (fileConfig.npm?.timeoutMs !== undefined) merged.npm!.timeoutMs = fileConfig.npm.timeoutMs
+  }
+
+  // Exception: failOnScannerError env var always overrides config file.
+  // This is a CI/bootstrap escape hatch - the env var should be authoritative.
+  if (envConfig.failOnScannerError !== undefined) {
+    merged.failOnScannerError = envConfig.failOnScannerError
   }
 
   return merged
@@ -282,7 +289,19 @@ async function tryLoadConfigFile(
 
     return parsed
   } catch (error) {
+    // CR6: Handle TOCTOU race condition - file may disappear between exists() and json()
+    // Check if error is ENOENT (file not found) - this should be non-fatal even in strict mode
+    const isENOENT =
+      error instanceof Error &&
+      ("code" in error ? error.code === "ENOENT" : error.message.includes("No such file"))
+
     if (options?.fatalOnError) {
+      // In strict mode, only throw for non-ENOENT errors (permissions, parse errors, etc.)
+      // ENOENT is acceptable - missing config file should not be fatal
+      if (isENOENT) {
+        return null
+      }
+
       const message = error instanceof Error ? error.message : String(error)
       throw new Error(
         `bun-scan: failed to load config file ${filename}: ${message}. ` +
@@ -298,6 +317,8 @@ async function tryLoadConfigFile(
       logger.warn(`Failed to parse ${filename} as JSON`, {
         error: error.message,
       })
+    } else if (isENOENT) {
+      logger.debug(`Config file ${filename} not found (race condition handled)`)
     }
     // For other errors (file not found, etc.), silently continue
     return null
