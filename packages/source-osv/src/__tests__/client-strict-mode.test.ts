@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, test } from "bun:test"
+import { beforeEach, afterEach, describe, expect, test } from "bun:test"
 import { createOSVClient } from "../client.js"
+import { setSleep, resetSleep } from "@repo/core"
 
 describe("OSVClient strict mode behavior", () => {
   const makePackage = (name: string, version: string): Bun.Security.Package => ({
@@ -11,6 +12,12 @@ describe("OSVClient strict mode behavior", () => {
 
   beforeEach(() => {
     process.env.BUN_SCAN_LOG_LEVEL = "error"
+    // Stub sleep to avoid slow tests due to retries
+    setSleep(async () => {})
+  })
+
+  afterEach(() => {
+    resetSleep()
   })
 
   test("rethrows on batch query failure when failOnScannerError is true", async () => {
@@ -45,9 +52,41 @@ describe("OSVClient strict mode behavior", () => {
     }
   })
 
-  test("continues on batch query failure when failOnScannerError is false", async () => {
+  test("rethrows on individual query failure when failOnScannerError is true (disableBatch: true)", async () => {
+    // Create client with batch disabled so it uses individual queries (querySinglePackage path)
+    const client = createOSVClient({
+      failOnScannerError: true,
+      osv: { disableBatch: true },
+    })
+
+    // Mock fetch to throw for individual queries
+    const originalFetch = globalThis.fetch
+
+    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
+      const urlStr = url.toString()
+      // Match individual query endpoint (not batch)
+      if (urlStr.includes("/query") && !urlStr.includes("querybatch")) {
+        throw new Error("Network error during individual query")
+      }
+      return originalFetch(url, options)
+    }
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = mockFetch
+
+    try {
+      const packages = [makePackage("pkg-a", "1.0.0")]
+
+      // Should throw because strict mode is enabled
+      await expect(client.queryVulnerabilities(packages)).rejects.toThrow(
+        "Network error during individual query",
+      )
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  test("continues on individual query failure when failOnScannerError is false (disableBatch: true)", async () => {
     // Create client with batch disabled so it uses individual queries
-    // This tests the catch-and-continue behavior in queryIndividually
     const client = createOSVClient({
       failOnScannerError: false,
       osv: { disableBatch: true },
@@ -88,8 +127,10 @@ describe("OSVClient strict mode behavior", () => {
     }
   })
 
-  test("continues on single vulnerability fetch failure when failOnScannerError is false", async () => {
-    const client = createOSVClient({})
+  test("rethrows on vulnerability detail fetch failure when failOnScannerError is true", async () => {
+    const client = createOSVClient({
+      failOnScannerError: true,
+    })
 
     // Mock fetch to return a valid batch response with vuln ID
     // but fail when trying to fetch the individual vulnerability
@@ -102,7 +143,7 @@ describe("OSVClient strict mode behavior", () => {
       if (urlStr.includes("querybatch")) {
         return new Response(
           JSON.stringify({
-            results: [{ vulns: [{ id: "CVE-2024-1234" }] }],
+            results: [{ vulns: [{ id: "CVE-2024-1234", modified: "2024-01-01T00:00:00Z" }] }],
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         )
@@ -119,7 +160,52 @@ describe("OSVClient strict mode behavior", () => {
     globalThis.fetch = mockFetch
 
     try {
-      const packages = [makePackage("pkg-a", "1.0.0")]
+      // Use 2+ packages to trigger batch query path (queryWithBatch -> fetchVulnerabilityDetails)
+      const packages = [makePackage("pkg-a", "1.0.0"), makePackage("pkg-b", "2.0.0")]
+
+      // Should throw in strict mode
+      await expect(client.queryVulnerabilities(packages)).rejects.toThrow(
+        "Failed to fetch vulnerability details",
+      )
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  test("continues on vulnerability detail fetch failure when failOnScannerError is false", async () => {
+    // Use 2+ packages to trigger batch query path
+    const client = createOSVClient({})
+
+    // Mock fetch to return a valid batch response with vuln ID
+    // but fail when trying to fetch the individual vulnerability
+    const originalFetch = globalThis.fetch
+
+    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
+      const urlStr = url.toString()
+
+      // Batch query succeeds and returns a vuln ID
+      if (urlStr.includes("querybatch")) {
+        return new Response(
+          JSON.stringify({
+            results: [{ vulns: [{ id: "CVE-2024-1234", modified: "2024-01-01T00:00:00Z" }] }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        )
+      }
+
+      // Individual vuln fetch fails
+      if (urlStr.includes("/vulns/CVE-2024-1234")) {
+        throw new Error("Failed to fetch vulnerability details")
+      }
+
+      return originalFetch(url, options)
+    }
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = mockFetch
+
+    try {
+      // Use 2+ packages to trigger batch query path
+      const packages = [makePackage("pkg-a", "1.0.0"), makePackage("pkg-b", "2.0.0")]
 
       // Should not throw, should return empty due to fetch failure
       const result = await client.queryVulnerabilities(packages)

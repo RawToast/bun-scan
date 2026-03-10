@@ -145,6 +145,20 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
       const chunk = uniqueIds.slice(i, i + chunkSize)
       const chunkResults = await Promise.allSettled(chunk.map((id) => fetchSingleVulnerability(id)))
 
+      // Gap 3: Check for rejections in strict mode
+      if (failOnError) {
+        const rejections = chunkResults.filter((r) => r.status === "rejected")
+        if (rejections.length > 0) {
+          const firstError = rejections[0]!.reason
+          const message = firstError instanceof Error ? firstError.message : String(firstError)
+          logger.error(`Failed to fetch vulnerability details (strict mode)`, {
+            error: message,
+            failedCount: rejections.length,
+          })
+          throw firstError
+        }
+      }
+
       for (const result of chunkResults) {
         if (result.status === "fulfilled" && result.value) {
           vulnerabilities.push(result.value)
@@ -239,10 +253,23 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
           break // No more pages
         }
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+
+        // Gap 1: Strict mode: rethrow instead of continuing with partial results
+        if (failOnError) {
+          logger.error(
+            `Query failed for ${query.package?.name || "unknown"}@${query.version || "unknown"} (strict mode)`,
+            {
+              error: message,
+            },
+          )
+          throw error
+        }
+
         logger.warn(
           `Query failed for ${query.package?.name || "unknown"}@${query.version || "unknown"}`,
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: message,
           },
         )
         break // Exit pagination loop on error
@@ -257,6 +284,20 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
    */
   async function queryIndividually(queries: OSVQuery[]): Promise<OSVVulnerability[]> {
     const responses = await Promise.allSettled(queries.map((query) => querySinglePackage(query)))
+
+    // Gap 2: Check for rejections in strict mode
+    if (failOnError) {
+      const rejections = responses.filter((r) => r.status === "rejected")
+      if (rejections.length > 0) {
+        const firstError = rejections[0]!.reason
+        const message = firstError instanceof Error ? firstError.message : String(firstError)
+        logger.error(`Individual query failed (strict mode)`, {
+          error: message,
+          failedCount: rejections.length,
+        })
+        throw firstError
+      }
+    }
 
     const vulnerabilities: OSVVulnerability[] = []
     let successCount = 0
