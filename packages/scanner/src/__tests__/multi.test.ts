@@ -165,9 +165,7 @@ describe("MultiSourceScanner", () => {
         failOnScannerError: true,
       })
 
-      await expect(scanner.scan([makePackage("pkg", "1.0.0")])).rejects.toThrow(
-        /scan failed/i,
-      )
+      await expect(scanner.scan([makePackage("pkg", "1.0.0")])).rejects.toThrow(/scan failed/i)
     })
 
     test("error message includes source names and reasons", async () => {

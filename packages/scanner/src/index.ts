@@ -1,6 +1,6 @@
 /// <reference types="bun-types" />
 import "@repo/core"
-import { loadConfig, logger, CONFIG_DEFAULTS } from "@repo/core"
+import { ENV, loadConfig, logger, CONFIG_DEFAULTS, parseEnvBoolean } from "@repo/core"
 import { createSources } from "./sources/factory.js"
 import { createMultiSourceScanner } from "./sources/multi.js"
 
@@ -44,15 +44,6 @@ export { createMultiSourceScanner } from "./sources/multi.js"
 export type { MultiSourceScanner, MultiSourceScannerOptions } from "./sources/multi.js"
 
 /**
- * Check env var for failOnScannerError as bootstrap fallback.
- * Used before config loading and in catch block where config may not be available.
- */
-function parseFailOnScannerErrorEnv(): boolean {
-  const value = Bun.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR?.toLowerCase()
-  return value === "true"
-}
-
-/**
  * Bun Security Scanner with configurable vulnerability sources
  * Supports OSV.dev, npm Registry, or both
  */
@@ -61,7 +52,8 @@ export const scanner: Bun.Security.Scanner = {
 
   async scan({ packages }) {
     // Resolve strict mode from env first (bootstrap — always available)
-    let failOnScannerError = parseFailOnScannerErrorEnv()
+    // Using === true collapses undefined to false, matching original behavior
+    let failOnScannerError = parseEnvBoolean(ENV.FAIL_ON_SCANNER_ERROR) === true
 
     try {
       logger.debug(`Starting vulnerability scan for ${packages.length} packages`)

@@ -148,7 +148,7 @@ function parseEnvNumber(envVar: string): number | undefined {
  * Parse env string to boolean, returning undefined if unset
  * Treats "true" (case-insensitive) as true, "false" as false
  */
-function parseEnvBoolean(envVar: string): boolean | undefined {
+export function parseEnvBoolean(envVar: string): boolean | undefined {
   const value = Bun.env[envVar]
   if (!value) return undefined
   const lower = value.toLowerCase()
