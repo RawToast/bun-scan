@@ -4,13 +4,29 @@ import { scanner } from ".."
 
 const ENV_VAR = "BUN_SCAN_FAIL_ON_SCANNER_ERROR"
 
+/**
+ * Helper to clean up config files for test filesystem isolation
+ */
+async function cleanupConfigFiles(): Promise<void> {
+  const files = [".bun-scan.json", ".bun-scan.config.json"]
+  for (const file of files) {
+    const f = Bun.file(file)
+    if (await f.exists()) {
+      const { unlink } = await import("node:fs/promises")
+      await unlink(file).catch(() => {})
+    }
+  }
+}
+
 describe("Scanner", () => {
   let originalEnvValue: string | undefined
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Snapshot the original env value for test isolation
     originalEnvValue = Bun.env[ENV_VAR]
     delete Bun.env[ENV_VAR]
+    // Ensure filesystem isolation - remove any ambient config files
+    await cleanupConfigFiles()
   })
 
   afterEach(async () => {
@@ -20,8 +36,7 @@ describe("Scanner", () => {
     } else {
       Bun.env[ENV_VAR] = originalEnvValue
     }
-    const { unlink } = await import("node:fs/promises")
-    await unlink(".bun-scan.json").catch(() => {})
+    await cleanupConfigFiles()
   })
 
   describe("Interface Compliance", () => {
