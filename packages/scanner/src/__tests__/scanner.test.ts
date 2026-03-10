@@ -377,5 +377,21 @@ describe("Scanner", () => {
       const result = await scanner.scan({ packages })
       expect(Array.isArray(result)).toBe(true)
     }, 30000)
+
+    test("re-throws on malformed config when env var is set (bootstrap path)", async () => {
+      process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
+      await Bun.write(".bun-scan.json", "{ invalid json")
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      await expect(scanner.scan({ packages })).rejects.toThrow(/failed to load config/)
+    })
   })
 })

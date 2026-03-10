@@ -190,7 +190,10 @@ function buildEnvConfig(): Partial<Config> {
 
 /**
  * Merge configuration layers: defaults → env → config file
- * Config file wins over env, env wins over defaults
+ * Config file wins over env, env wins over defaults.
+ *
+ * Exception: failOnScannerError env var overrides config file
+ * (bootstrap escape hatch — strict mode must be activatable externally).
  */
 function mergeConfig(fileConfig: Config | null): Config {
   const envConfig = buildEnvConfig()
@@ -243,6 +246,8 @@ function mergeConfig(fileConfig: Config | null): Config {
 /**
  * Load full configuration from the current working directory
  * Merges: defaults → environment variables → config file
+ *
+ * When BUN_SCAN_FAIL_ON_SCANNER_ERROR=true, config parse/read errors are fatal.
  */
 export async function loadConfig(): Promise<Config> {
   const strictBootstrap = parseEnvBoolean(ENV.FAIL_ON_SCANNER_ERROR) === true

@@ -150,6 +150,22 @@ export declare const ConfigSchema: z.ZodObject<{
       }>
     >
   >
+  logLevel: z.ZodOptional<z.ZodEnum<["debug", "info", "warn", "error"]>>
+  bunReportWarnings: z.ZodOptional<z.ZodBoolean>
+  failOnScannerError: z.ZodOptional<z.ZodBoolean>
+  osv: z.ZodOptional<
+    z.ZodObject<{
+      apiBaseUrl: z.ZodOptional<z.ZodString>
+      timeoutMs: z.ZodOptional<z.ZodNumber>
+      disableBatch: z.ZodOptional<z.ZodBoolean>
+    }>
+  >
+  npm: z.ZodOptional<
+    z.ZodObject<{
+      registryUrl: z.ZodOptional<z.ZodString>
+      timeoutMs: z.ZodOptional<z.ZodNumber>
+    }>
+  >
 }>
 
 /** Load config from .bun-scan.json or .bun-scan.config.json */
