@@ -174,4 +174,101 @@ describe("OSVSource discriminator regression tests", () => {
       globalThis.fetch = originalFetch
     }
   })
+
+  test("mixed legacy ignore array with failOnScannerError preserves ignore config", async () => {
+    const source = createOSVSource({ ignore: ["CVE-2024-1234"], failOnScannerError: true })
+    const originalFetch = globalThis.fetch
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = async (url: string | Request | URL) => {
+      const urlStr = url.toString()
+      if (urlStr.includes("querybatch")) {
+        return new Response(
+          JSON.stringify({
+            results: [
+              {
+                vulnerabilities: [
+                  {
+                    id: "CVE-2024-1234",
+                    summary: "Test vulnerability",
+                    severity: "HIGH",
+                    affected: [
+                      {
+                        package: { name: "pkg-a", ecosystem: "npm" },
+                        ranges: [
+                          { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "1.0.0" }] },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          }),
+          { status: 200 },
+        )
+      }
+      // Handle get query for vulnerability details - return empty to avoid secondary queries failing
+      if (urlStr.includes("/query") && !urlStr.includes("querybatch")) {
+        return new Response(JSON.stringify({}), { status: 200 })
+      }
+      return originalFetch(url)
+    }
+    try {
+      const packages = [makePackage("pkg-a", "0.5.0")]
+      const result = await source.scan(packages)
+      expect(result).toHaveLength(0)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  test("mixed legacy packages config with failOnScannerError preserves packages config", async () => {
+    const source = createOSVSource({
+      packages: { "pkg-a": { vulnerabilities: ["CVE-2024-5678"] } },
+      failOnScannerError: true,
+    })
+    const originalFetch = globalThis.fetch
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = async (url: string | Request | URL) => {
+      const urlStr = url.toString()
+      if (urlStr.includes("querybatch")) {
+        return new Response(
+          JSON.stringify({
+            results: [
+              {
+                vulnerabilities: [
+                  {
+                    id: "CVE-2024-5678",
+                    summary: "Test vulnerability",
+                    severity: "MEDIUM",
+                    affected: [
+                      {
+                        package: { name: "pkg-a", ecosystem: "npm" },
+                        ranges: [
+                          { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "1.0.0" }] },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          }),
+          { status: 200 },
+        )
+      }
+      // Handle get query for vulnerability details - return empty to avoid secondary queries failing
+      if (urlStr.includes("/query") && !urlStr.includes("querybatch")) {
+        return new Response(JSON.stringify({}), { status: 200 })
+      }
+      return originalFetch(url)
+    }
+    try {
+      const packages = [makePackage("pkg-a", "0.5.0")]
+      const result = await source.scan(packages)
+      expect(result).toHaveLength(0)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
 })

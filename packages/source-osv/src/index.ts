@@ -43,7 +43,7 @@ export interface CreateOSVSourceOptions {
 
 /**
  * Detect if options is new format (CreateOSVSourceOptions) or legacy (IgnoreConfig)
- * New format has `ignore` as an object with ignore/packages, or `osv` key
+ * New format has `ignore` as an object with ignore/packages, or `osv` key, or `failOnScannerError`
  * Legacy format has `ignore` as an array or `packages` as a record directly
  */
 function isNewOptionsFormat(
@@ -79,7 +79,36 @@ export function createOSVSource(
   let failOnScannerError: boolean | undefined
 
   if (isNewOptionsFormat(options)) {
-    ignoreConfig = options.ignore ?? {}
+    // New format: preserve both new fields and any legacy ignore/packages from the input
+    // Note: options may contain both new format fields (failOnScannerError, osv) and
+    // legacy fields (ignore array or packages record) - we need to preserve both
+    //
+    // Handle mixed legacy/new format cases:
+    // - { ignore: [...], failOnScannerError: true } - legacy ignore array with new-format flag
+    // - { packages: {...}, failOnScannerError: true } - legacy packages config with new-format flag
+    // - { ignore: {...}, failOnScannerError: true } - proper new format (pass through)
+    const ignoreFromOptions = options.ignore
+    const packagesFromOptions = (options as IgnoreConfig).packages
+
+    // Determine ignore config - handle both object and array forms
+    if (ignoreFromOptions !== undefined) {
+      // If ignore is an array (legacy format), wrap it in an object
+      if (Array.isArray(ignoreFromOptions)) {
+        ignoreConfig = { ignore: ignoreFromOptions, packages: packagesFromOptions }
+      } else {
+        // If ignore is an object (new format), use it directly and merge packages if present
+        ignoreConfig = {
+          ignore: ignoreFromOptions.ignore,
+          packages: ignoreFromOptions.packages ?? packagesFromOptions,
+        }
+      }
+    } else if (packagesFromOptions !== undefined) {
+      // Only packages provided (legacy format with new-format flag)
+      ignoreConfig = { ignore: undefined, packages: packagesFromOptions }
+    } else {
+      ignoreConfig = {}
+    }
+
     osvConfig = options.osv
     failOnScannerError = options.failOnScannerError
   } else {

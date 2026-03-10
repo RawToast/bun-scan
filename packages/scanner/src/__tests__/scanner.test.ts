@@ -369,7 +369,7 @@ describe("Scanner", () => {
     }, 5000)
 
     test("re-throws scanner errors when env var is set", async () => {
-      process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
+      Bun.env[ENV_VAR] = "true"
       await Bun.write(
         ".bun-scan.json",
         JSON.stringify({
@@ -413,7 +413,7 @@ describe("Scanner", () => {
     }, 5000)
 
     test("re-throws on malformed config when env var is set (bootstrap path)", async () => {
-      process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
+      Bun.env[ENV_VAR] = "true"
       await Bun.write(".bun-scan.json", "{ invalid json")
 
       const packages: Bun.Security.Package[] = [

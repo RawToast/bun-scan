@@ -477,4 +477,75 @@ describe("NpmSource discriminator regression tests", () => {
       globalThis.fetch = originalFetch
     }
   })
+
+  test("mixed legacy ignore array with failOnScannerError preserves ignore config", async () => {
+    const source = createNpmSource({ ignore: ["CVE-2024-1234"], failOnScannerError: true })
+    const originalFetch = globalThis.fetch
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = async (url: string | Request | URL) => {
+      const urlStr = url.toString()
+      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
+        return new Response(
+          JSON.stringify({
+            "pkg-a": [
+              {
+                id: 999999,
+                url: "https://example.com/advisories/CVE-2024-1234",
+                title: "Test",
+                severity: "high",
+                vulnerable_versions: "<1.0.0",
+                cves: ["CVE-2024-1234"],
+              },
+            ],
+          }),
+          { status: 200 },
+        )
+      }
+      return originalFetch(url)
+    }
+    try {
+      const packages = [makePackage("pkg-a", "0.5.0")]
+      const result = await source.scan(packages)
+      expect(result).toHaveLength(0)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  test("mixed legacy packages config with failOnScannerError preserves packages config", async () => {
+    const source = createNpmSource({
+      packages: { "pkg-a": { vulnerabilities: ["CVE-2024-5678"] } },
+      failOnScannerError: true,
+    })
+    const originalFetch = globalThis.fetch
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = async (url: string | Request | URL) => {
+      const urlStr = url.toString()
+      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
+        return new Response(
+          JSON.stringify({
+            "pkg-a": [
+              {
+                id: 999998,
+                url: "https://example.com/advisories/CVE-2024-5678",
+                title: "Test",
+                severity: "moderate",
+                vulnerable_versions: "<1.0.0",
+                cves: ["CVE-2024-5678"],
+              },
+            ],
+          }),
+          { status: 200 },
+        )
+      }
+      return originalFetch(url)
+    }
+    try {
+      const packages = [makePackage("pkg-a", "0.5.0")]
+      const result = await source.scan(packages)
+      expect(result).toHaveLength(0)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
 })
