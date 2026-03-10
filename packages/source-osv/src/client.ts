@@ -11,6 +11,8 @@ export interface OSVClient {
 /** Options for creating OSV client */
 export interface CreateOSVClientOptions {
   osv?: OsvConfig
+  /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
+  failOnScannerError?: boolean
 }
 
 /**
@@ -22,6 +24,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
   const baseUrl = osvConfig.apiBaseUrl ?? OSV_API.BASE_URL
   const timeout = osvConfig.timeoutMs ?? OSV_API.TIMEOUT_MS
   const useBatch = !(osvConfig.disableBatch ?? false)
+  const failOnError = options.failOnScannerError ?? false
 
   /**
    * Deduplicate packages by name@version to avoid redundant queries
@@ -108,8 +111,18 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
         return OSVVulnerabilitySchema.parse(data)
       }, `Get vulnerability ${id}`)
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+
+      // Strict mode: rethrow instead of continuing with partial results
+      if (failOnError) {
+        logger.error(`Failed to fetch vulnerability ${id} (strict mode)`, {
+          error: message,
+        })
+        throw error
+      }
+
       logger.warn(`Failed to fetch vulnerability ${id}`, {
-        error: error instanceof Error ? error.message : String(error),
+        error: message,
       })
       return null
     }
@@ -158,8 +171,19 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
         const batchIds = await executeBatchQuery(batchQueries)
         vulnerabilityIds.push(...batchIds)
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+
+        // Strict mode: rethrow instead of continuing with next batch
+        if (failOnError) {
+          logger.error(`Batch query failed for ${batchQueries.length} packages (strict mode)`, {
+            error: message,
+            startIndex: i,
+          })
+          throw error
+        }
+
         logger.error(`Batch query failed for ${batchQueries.length} packages`, {
-          error: error instanceof Error ? error.message : String(error),
+          error: message,
           startIndex: i,
         })
         // Continue with next batch rather than failing completely

@@ -37,6 +37,8 @@ export { isPackageAffected } from "./semver.js"
 export interface CreateOSVSourceOptions {
   ignore?: IgnoreConfig
   osv?: OsvConfig
+  /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
+  failOnScannerError?: boolean
 }
 
 /**
@@ -72,16 +74,19 @@ export function createOSVSource(
   // Handle legacy signature (just IgnoreConfig) vs new format
   let ignoreConfig: IgnoreConfig
   let osvConfig: OsvConfig | undefined
+  let failOnScannerError: boolean | undefined
 
   if (isNewOptionsFormat(options)) {
     ignoreConfig = options.ignore ?? {}
     osvConfig = options.osv
+    failOnScannerError = options.failOnScannerError
   } else {
     ignoreConfig = options
     osvConfig = undefined
+    failOnScannerError = undefined
   }
 
-  const client = createOSVClient({ osv: osvConfig })
+  const client = createOSVClient({ osv: osvConfig, failOnScannerError })
   const processor = createVulnerabilityProcessor(ignoreConfig)
 
   return {

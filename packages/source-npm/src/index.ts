@@ -32,6 +32,8 @@ export { NPM_AUDIT_API, HTTP, SECURITY } from "./constants.js"
 export interface CreateNpmSourceOptions {
   ignore?: IgnoreConfig
   npm?: NpmConfig
+  /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
+  failOnScannerError?: boolean
 }
 
 /**
@@ -67,16 +69,19 @@ export function createNpmSource(
   // Handle legacy signature (just IgnoreConfig) vs new format
   let ignoreConfig: IgnoreConfig
   let npmConfig: NpmConfig | undefined
+  let failOnScannerError: boolean | undefined
 
   if (isNewOptionsFormat(options)) {
     ignoreConfig = options.ignore ?? {}
     npmConfig = options.npm
+    failOnScannerError = options.failOnScannerError
   } else {
     ignoreConfig = options
     npmConfig = undefined
+    failOnScannerError = undefined
   }
 
-  const client = createNpmAuditClient({ npm: npmConfig })
+  const client = createNpmAuditClient({ npm: npmConfig, failOnScannerError })
   const processor = createAdvisoryProcessor(ignoreConfig)
 
   return {

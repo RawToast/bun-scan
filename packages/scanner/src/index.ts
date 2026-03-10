@@ -66,7 +66,7 @@ export const scanner: Bun.Security.Scanner = {
       failOnScannerError = config.failOnScannerError ?? failOnScannerError
 
       // Create vulnerability sources based on config
-      const sources = createSources(config.source ?? "osv", config)
+      const sources = createSources(config.source ?? "osv", config, failOnScannerError)
 
       // Scan with all configured sources
       const multiScanner = createMultiSourceScanner(sources, { failOnScannerError })
