@@ -181,41 +181,48 @@ describe("OSVSource discriminator regression tests", () => {
     // @ts-expect-error - assigning mock for testing
     globalThis.fetch = async (url: string | Request | URL) => {
       const urlStr = url.toString()
+      // Use batch mode by providing 2+ packages - OSV only uses batch when > 1 package
       if (urlStr.includes("querybatch")) {
         return new Response(
           JSON.stringify({
             results: [
               {
-                vulnerabilities: [
-                  {
-                    id: "CVE-2024-1234",
-                    summary: "Test vulnerability",
-                    severity: "HIGH",
-                    affected: [
-                      {
-                        package: { name: "pkg-a", ecosystem: "npm" },
-                        ranges: [
-                          { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "1.0.0" }] },
-                        ],
-                      },
-                    ],
-                  },
-                ],
+                vulns: [{ id: "CVE-2024-1234", modified: "2024-01-01T00:00:00Z" }],
+              },
+              {
+                vulns: [], // Second package has no vulns
               },
             ],
           }),
           { status: 200 },
         )
       }
-      // Handle get query for vulnerability details - return empty to avoid secondary queries failing
-      if (urlStr.includes("/query") && !urlStr.includes("querybatch")) {
-        return new Response(JSON.stringify({}), { status: 200 })
+      // Mock /vulns/:id endpoint for fetching full vulnerability details
+      if (urlStr.includes("/vulns/")) {
+        const vulnId = urlStr.split("/vulns/")[1]
+        return new Response(
+          JSON.stringify({
+            id: vulnId,
+            summary: "Test vulnerability",
+            severity: [{ type: "CVSS_V3", score: "7.5" }],
+            modified: "2024-01-01T00:00:00Z",
+            affected: [
+              {
+                package: { name: "pkg-a", ecosystem: "npm" },
+                ranges: [{ type: "SEMVER", events: [{ introduced: "0" }, { fixed: "1.0.0" }] }],
+              },
+            ],
+          }),
+          { status: 200 },
+        )
       }
       return originalFetch(url)
     }
     try {
-      const packages = [makePackage("pkg-a", "0.5.0")]
+      // Use 2 packages to trigger batch mode (OSV uses batch when > 1 package)
+      const packages = [makePackage("pkg-a", "0.5.0"), makePackage("pkg-b", "1.0.0")]
       const result = await source.scan(packages)
+      // Should be empty because CVE-2024-1234 is in the ignore list
       expect(result).toHaveLength(0)
     } finally {
       globalThis.fetch = originalFetch
@@ -231,41 +238,48 @@ describe("OSVSource discriminator regression tests", () => {
     // @ts-expect-error - assigning mock for testing
     globalThis.fetch = async (url: string | Request | URL) => {
       const urlStr = url.toString()
+      // Use batch mode by providing 2+ packages - OSV only uses batch when > 1 package
       if (urlStr.includes("querybatch")) {
         return new Response(
           JSON.stringify({
             results: [
               {
-                vulnerabilities: [
-                  {
-                    id: "CVE-2024-5678",
-                    summary: "Test vulnerability",
-                    severity: "MEDIUM",
-                    affected: [
-                      {
-                        package: { name: "pkg-a", ecosystem: "npm" },
-                        ranges: [
-                          { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "1.0.0" }] },
-                        ],
-                      },
-                    ],
-                  },
-                ],
+                vulns: [{ id: "CVE-2024-5678", modified: "2024-01-01T00:00:00Z" }],
+              },
+              {
+                vulns: [], // Second package has no vulns
               },
             ],
           }),
           { status: 200 },
         )
       }
-      // Handle get query for vulnerability details - return empty to avoid secondary queries failing
-      if (urlStr.includes("/query") && !urlStr.includes("querybatch")) {
-        return new Response(JSON.stringify({}), { status: 200 })
+      // Mock /vulns/:id endpoint for fetching full vulnerability details
+      if (urlStr.includes("/vulns/")) {
+        const vulnId = urlStr.split("/vulns/")[1]
+        return new Response(
+          JSON.stringify({
+            id: vulnId,
+            summary: "Test vulnerability",
+            severity: [{ type: "CVSS_V3", score: "5.0" }],
+            modified: "2024-01-01T00:00:00Z",
+            affected: [
+              {
+                package: { name: "pkg-a", ecosystem: "npm" },
+                ranges: [{ type: "SEMVER", events: [{ introduced: "0" }, { fixed: "1.0.0" }] }],
+              },
+            ],
+          }),
+          { status: 200 },
+        )
       }
       return originalFetch(url)
     }
     try {
-      const packages = [makePackage("pkg-a", "0.5.0")]
+      // Use 2 packages to trigger batch mode (OSV uses batch when > 1 package)
+      const packages = [makePackage("pkg-a", "0.5.0"), makePackage("pkg-b", "1.0.0")]
       const result = await source.scan(packages)
+      // Should be empty because CVE-2024-5678 is in the packages config (pre-defined vulnerability list)
       expect(result).toHaveLength(0)
     } finally {
       globalThis.fetch = originalFetch
