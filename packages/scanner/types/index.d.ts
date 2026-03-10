@@ -64,7 +64,7 @@ export declare const DEFAULT_RETRY_CONFIG: RetryConfig
 export declare function withRetry<T>(
   operation: () => Promise<T>,
   operationName: string,
-  config?: Partial<RetryConfig>,
+  config?: RetryConfig,
 ): Promise<T>
 
 // ============================================================================
@@ -108,6 +108,15 @@ export interface NpmConfig {
 export interface CreateOSVSourceOptions {
   ignore?: IgnoreConfig
   osv?: OsvConfig
+  /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
+  failOnScannerError?: boolean
+}
+
+export interface CreateNpmSourceOptions {
+  ignore?: IgnoreConfig
+  npm?: NpmConfig
+  /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
+  failOnScannerError?: boolean
 }
 
 export interface CompiledPackageRule {
@@ -120,6 +129,24 @@ export interface CompiledIgnoreConfig {
   ignoreSet: Set<string>
   packages: Map<string, CompiledPackageRule>
 }
+
+export interface ConfigDefaults {
+  readonly logLevel: "debug" | "info" | "warn" | "error"
+  readonly bunReportWarnings: boolean
+  readonly failOnScannerError: boolean
+  readonly osv: {
+    readonly apiBaseUrl: string
+    readonly timeoutMs: number
+    readonly disableBatch: boolean
+  }
+  readonly npm: {
+    readonly registryUrl: string
+    readonly timeoutMs: number
+  }
+}
+
+/** Default configuration values */
+export declare const CONFIG_DEFAULTS: ConfigDefaults
 
 /** Zod schema for ignore config validation */
 export declare const IgnoreConfigSchema: z.ZodObject<{
@@ -176,11 +203,11 @@ export declare function compileIgnoreConfig(config: IgnoreConfig): CompiledIgnor
 
 /** Check if a vulnerability should be ignored */
 export declare function shouldIgnoreVulnerability(
-  compiledConfig: CompiledIgnoreConfig,
   vulnId: string,
-  packageName: string,
-  aliases?: string[],
-): boolean
+  vulnAliases: string[] | undefined,
+  packageName: string | undefined,
+  config: CompiledIgnoreConfig,
+): { ignored: boolean; reason?: string }
 
 // ============================================================================
 // Source Factories
@@ -192,15 +219,22 @@ export declare function createOSVSource(
 ): VulnerabilitySource
 
 /** Create an npm audit vulnerability source */
-export declare function createNpmSource(config?: IgnoreConfig): VulnerabilitySource
+export declare function createNpmSource(
+  options?: CreateNpmSourceOptions | IgnoreConfig,
+): VulnerabilitySource
 
 /** Create a vulnerability source by type */
-export declare function createSource(type: SourceType, config?: IgnoreConfig): VulnerabilitySource
+export declare function createSource(
+  type: SourceType,
+  config: Config,
+  failOnScannerError?: boolean,
+): VulnerabilitySource
 
 /** Create all sources for a given type (both = OSV + npm) */
 export declare function createSources(
   type: SourceType,
-  config?: IgnoreConfig,
+  config: Config,
+  failOnScannerError?: boolean,
 ): VulnerabilitySource[]
 
 // ============================================================================
