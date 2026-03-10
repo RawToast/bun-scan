@@ -176,6 +176,7 @@ function parseEnvLogLevel(envVar: string): Config["logLevel"] | undefined {
 function buildEnvConfig(): Partial<Config> {
   return {
     logLevel: parseEnvLogLevel(ENV.LOG_LEVEL),
+    failOnScannerError: parseEnvBoolean(ENV.FAIL_ON_SCANNER_ERROR),
     osv: {
       apiBaseUrl: Bun.env[ENV.API_BASE_URL] || undefined,
       timeoutMs: parseEnvNumber(ENV.TIMEOUT_MS),
@@ -191,9 +192,6 @@ function buildEnvConfig(): Partial<Config> {
 /**
  * Merge configuration layers: defaults → env → config file
  * Config file wins over env, env wins over defaults.
- *
- * Exception: failOnScannerError env var overrides config file
- * (bootstrap escape hatch — strict mode must be activatable externally).
  */
 function mergeConfig(fileConfig: Config | null): Config {
   const envConfig = buildEnvConfig()
@@ -210,6 +208,8 @@ function mergeConfig(fileConfig: Config | null): Config {
 
   // Layer env values (if set)
   if (envConfig.logLevel !== undefined) merged.logLevel = envConfig.logLevel
+  if (envConfig.failOnScannerError !== undefined)
+    merged.failOnScannerError = envConfig.failOnScannerError
   if (envConfig.osv?.apiBaseUrl !== undefined) merged.osv!.apiBaseUrl = envConfig.osv.apiBaseUrl
   if (envConfig.osv?.timeoutMs !== undefined) merged.osv!.timeoutMs = envConfig.osv.timeoutMs
   if (envConfig.osv?.disableBatch !== undefined)
@@ -235,10 +235,6 @@ function mergeConfig(fileConfig: Config | null): Config {
       merged.npm!.registryUrl = fileConfig.npm.registryUrl
     if (fileConfig.npm?.timeoutMs !== undefined) merged.npm!.timeoutMs = fileConfig.npm.timeoutMs
   }
-
-  // SPECIAL: env var overrides config file for failOnScannerError (bootstrap escape hatch)
-  const envFailOnError = parseEnvBoolean(ENV.FAIL_ON_SCANNER_ERROR)
-  if (envFailOnError !== undefined) merged.failOnScannerError = envFailOnError
 
   return merged
 }
