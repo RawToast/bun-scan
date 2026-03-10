@@ -145,7 +145,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
       const chunk = uniqueIds.slice(i, i + chunkSize)
       const chunkResults = await Promise.allSettled(chunk.map((id) => fetchSingleVulnerability(id)))
 
-      // Gap 3: Check for rejections in strict mode
+      // In strict mode, any detail-fetch failure must reject the entire operation
       if (failOnError) {
         const rejections = chunkResults.filter((r) => r.status === "rejected")
         if (rejections.length > 0) {
@@ -255,7 +255,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
 
-        // Gap 1: Strict mode: rethrow instead of continuing with partial results
+        // In strict mode, any single-package query failure must reject the entire operation
         if (failOnError) {
           logger.error(
             `Query failed for ${query.package?.name || "unknown"}@${query.version || "unknown"} (strict mode)`,
@@ -285,7 +285,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
   async function queryIndividually(queries: OSVQuery[]): Promise<OSVVulnerability[]> {
     const responses = await Promise.allSettled(queries.map((query) => querySinglePackage(query)))
 
-    // Gap 2: Check for rejections in strict mode
+    // In strict mode, any individual-query failure must reject the entire operation
     if (failOnError) {
       const rejections = responses.filter((r) => r.status === "rejected")
       if (rejections.length > 0) {

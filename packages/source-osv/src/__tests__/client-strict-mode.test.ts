@@ -52,6 +52,35 @@ describe("OSVClient strict mode behavior", () => {
     }
   })
 
+  test("continues on batch query failure when failOnScannerError is false", async () => {
+    // Lenient mode: batch query failure should not throw
+    const client = createOSVClient({
+      failOnScannerError: false,
+    })
+
+    // Mock fetch to throw for batch queries
+    const originalFetch = globalThis.fetch
+    const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
+      const urlStr = url.toString()
+      if (urlStr.includes("querybatch")) {
+        throw new Error("Network error during batch query")
+      }
+      return originalFetch(url, options)
+    }
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = mockFetch
+
+    try {
+      const packages = [makePackage("pkg-a", "1.0.0"), makePackage("pkg-b", "2.0.0")]
+
+      // Should not throw, should return empty results
+      const result = await client.queryVulnerabilities(packages)
+      expect(result).toEqual([])
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
   test("rethrows on individual query failure when failOnScannerError is true (disableBatch: true)", async () => {
     // Create client with batch disabled so it uses individual queries (querySinglePackage path)
     const client = createOSVClient({
