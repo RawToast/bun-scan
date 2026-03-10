@@ -88,7 +88,7 @@ export interface Config {
   packages?: Record<string, IgnorePackageRule>
   logLevel?: "debug" | "info" | "warn" | "error"
   bunReportWarnings?: boolean
-  /** Fail on scanner errors (block install). Env var overrides config file. */
+  /** Fail on scanner errors (block install). Env var used as fallback if not set in config. */
   failOnScannerError?: boolean
   osv?: OsvConfig
   npm?: NpmConfig

@@ -31,10 +31,12 @@ async function cleanupConfigFiles(): Promise<void> {
 describe("Config", () => {
   let originalEnvValue: string | undefined
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Snapshot the original env value for test isolation
     originalEnvValue = Bun.env[ENV_VAR]
     delete Bun.env[ENV_VAR]
+    // Ensure filesystem isolation - remove any ambient config files
+    await cleanupConfigFiles()
   })
 
   afterEach(async () => {

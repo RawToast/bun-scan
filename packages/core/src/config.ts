@@ -81,7 +81,7 @@ export const ConfigSchema = z.object({
   logLevel: z.enum(["debug", "info", "warn", "error"]).optional(),
   /** Report warnings to Bun (causes install prompt). Set false to print only. */
   bunReportWarnings: z.boolean().optional(),
-  /** Fail on scanner errors (block install). Env var overrides config file. */
+  /** Fail on scanner errors (block install). Env var used as fallback if not set in config. */
   failOnScannerError: z.boolean().optional(),
   /** OSV source configuration */
   osv: OsvConfigSchema.optional(),

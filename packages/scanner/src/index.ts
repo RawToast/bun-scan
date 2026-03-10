@@ -62,7 +62,7 @@ export const scanner: Bun.Security.Scanner = {
       const config = await loadConfig()
       const bunReportWarnings = config.bunReportWarnings ?? CONFIG_DEFAULTS.bunReportWarnings
 
-      // Update from config (env var already overrides inside mergeConfig)
+      // Update from config (config takes precedence over env var)
       failOnScannerError = config.failOnScannerError ?? failOnScannerError
 
       // Create vulnerability sources based on config
