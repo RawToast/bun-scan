@@ -89,7 +89,11 @@ export function createMultiSourceScanner(
     logger.info(`Scanning with sources: ${sourceNames}`)
 
     // Query all sources in parallel
-    const results = await Promise.allSettled(sources.map((source) => source.scan(packages)))
+    // Wrap each scan call in an async boundary so synchronous throws become rejected
+    // promises captured by Promise.allSettled (instead of escaping during map())
+    const results = await Promise.allSettled(
+      sources.map((source) => Promise.resolve().then(() => source.scan(packages))),
+    )
 
     // Collect all advisories and track failures
     const allAdvisories: Bun.Security.Advisory[] = []

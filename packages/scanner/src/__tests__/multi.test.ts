@@ -123,6 +123,47 @@ describe("MultiSourceScanner", () => {
     expect(results).toHaveLength(1)
   })
 
+  test("handles synchronously throwing source (not just async errors)", async () => {
+    // This is the bug: if source.scan() throws synchronously (before returning a promise),
+    // it should be captured by Promise.allSettled, not escape immediately
+    const syncThrowSource: VulnerabilitySource = {
+      name: "sync-throw",
+      // Note: NOT async - this is a synchronous throw
+      scan() {
+        throw new Error("sync error from source")
+      },
+    }
+
+    const workingSource: VulnerabilitySource = {
+      name: "working",
+      async scan() {
+        return [makeAdvisory({ id: "CVE-1", package: "pkg" })]
+      },
+    }
+
+    const scanner = createMultiSourceScanner([syncThrowSource, workingSource])
+    const results = await scanner.scan([makePackage("pkg", "1.0.0")])
+
+    // Should still get results from working source - sync throw should NOT escape
+    expect(results).toHaveLength(1)
+  })
+
+  test("throws on sync-throwing source when failOnScannerError is true", async () => {
+    const syncThrowSource: VulnerabilitySource = {
+      name: "sync-fail",
+      // Note: NOT async - this is a synchronous throw
+      scan() {
+        throw new Error("sync failure")
+      },
+    }
+
+    const scanner = createMultiSourceScanner([syncThrowSource], {
+      failOnScannerError: true,
+    })
+
+    await expect(scanner.scan([makePackage("pkg", "1.0.0")])).rejects.toThrow()
+  })
+
   describe("failOnScannerError behavior", () => {
     test("throws when any source fails and failOnScannerError is true", async () => {
       const failingSource: VulnerabilitySource = {
