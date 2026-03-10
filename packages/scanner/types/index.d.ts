@@ -86,12 +86,23 @@ export interface Config {
   source?: SourceType
   ignore?: string[]
   packages?: Record<string, IgnorePackageRule>
+  logLevel?: "debug" | "info" | "warn" | "error"
+  bunReportWarnings?: boolean
+  /** Fail on scanner errors (block install). Env var overrides config file. */
+  failOnScannerError?: boolean
+  osv?: OsvConfig
+  npm?: NpmConfig
 }
 
 export interface OsvConfig {
   apiBaseUrl?: string
   timeoutMs?: number
   disableBatch?: boolean
+}
+
+export interface NpmConfig {
+  registryUrl?: string
+  timeoutMs?: number
 }
 
 export interface CreateOSVSourceOptions {
@@ -184,8 +195,17 @@ export interface MultiSourceScanner {
   scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]>
 }
 
+/** Options for multi-source scanner */
+export interface MultiSourceScannerOptions {
+  /** When true, throw if any configured source fails */
+  failOnScannerError?: boolean
+}
+
 /** Create a scanner that queries multiple sources in parallel */
-export declare function createMultiSourceScanner(sources: VulnerabilitySource[]): MultiSourceScanner
+export declare function createMultiSourceScanner(
+  sources: VulnerabilitySource[],
+  options?: MultiSourceScannerOptions,
+): MultiSourceScanner
 
 // ============================================================================
 // Main Scanner Export
