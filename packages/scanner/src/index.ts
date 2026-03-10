@@ -44,6 +44,15 @@ export { createMultiSourceScanner } from "./sources/multi.js"
 export type { MultiSourceScanner, MultiSourceScannerOptions } from "./sources/multi.js"
 
 /**
+ * Check env var for failOnScannerError as bootstrap fallback.
+ * Used before config loading and in catch block where config may not be available.
+ */
+function parseFailOnScannerErrorEnv(): boolean {
+  const value = Bun.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR?.toLowerCase()
+  return value === "true"
+}
+
+/**
  * Bun Security Scanner with configurable vulnerability sources
  * Supports OSV.dev, npm Registry, or both
  */
@@ -51,6 +60,9 @@ export const scanner: Bun.Security.Scanner = {
   version: "1",
 
   async scan({ packages }) {
+    // Resolve strict mode from env first (bootstrap — always available)
+    let failOnScannerError = parseFailOnScannerErrorEnv()
+
     try {
       logger.debug(`Starting vulnerability scan for ${packages.length} packages`)
 
@@ -58,11 +70,14 @@ export const scanner: Bun.Security.Scanner = {
       const config = await loadConfig()
       const bunReportWarnings = config.bunReportWarnings ?? CONFIG_DEFAULTS.bunReportWarnings
 
+      // Update from config (env var already overrides inside mergeConfig)
+      failOnScannerError = config.failOnScannerError ?? failOnScannerError
+
       // Create vulnerability sources based on config
       const sources = createSources(config.source ?? "osv", config)
 
       // Scan with all configured sources
-      const multiScanner = createMultiSourceScanner(sources)
+      const multiScanner = createMultiSourceScanner(sources, { failOnScannerError })
       const advisories = await multiScanner.scan(packages)
 
       logger.info(
@@ -95,6 +110,11 @@ export const scanner: Bun.Security.Scanner = {
       logger.error("Scanner encountered an unexpected error", {
         error: message,
       })
+
+      // Strict mode: re-throw to block install
+      if (failOnScannerError) {
+        throw error
+      }
 
       // Fail-safe: allow installation to proceed on scanner errors
       return []

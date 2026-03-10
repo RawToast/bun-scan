@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { afterEach, describe, expect, test } from "bun:test"
 import { scanner } from ".."
 
 describe("Scanner", () => {
@@ -303,5 +303,79 @@ describe("Scanner", () => {
       // Should complete within 30 seconds
       expect(duration).toBeLessThan(30000)
     }, 35000) // 35 second timeout for this test
+  })
+
+  describe("failOnScannerError behavior", () => {
+    afterEach(async () => {
+      delete process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR
+      const { unlink } = await import("node:fs/promises")
+      await unlink(".bun-scan.json").catch(() => {})
+    })
+
+    test("re-throws scanner errors when failOnScannerError is true in config", async () => {
+      await Bun.write(
+        ".bun-scan.json",
+        JSON.stringify({
+          failOnScannerError: true,
+          source: "npm",
+          npm: { registryUrl: "http://127.0.0.1:1", timeoutMs: 1000 },
+        }),
+      )
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      await expect(scanner.scan({ packages })).rejects.toThrow()
+    }, 30000)
+
+    test("re-throws scanner errors when env var is set", async () => {
+      process.env.BUN_SCAN_FAIL_ON_SCANNER_ERROR = "true"
+      await Bun.write(
+        ".bun-scan.json",
+        JSON.stringify({
+          source: "npm",
+          npm: { registryUrl: "http://127.0.0.1:1", timeoutMs: 1000 },
+        }),
+      )
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      await expect(scanner.scan({ packages })).rejects.toThrow()
+    }, 30000)
+
+    test("does not throw when failOnScannerError is false (default)", async () => {
+      await Bun.write(
+        ".bun-scan.json",
+        JSON.stringify({
+          source: "npm",
+          npm: { registryUrl: "http://127.0.0.1:1", timeoutMs: 1000 },
+        }),
+      )
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      const result = await scanner.scan({ packages })
+      expect(Array.isArray(result)).toBe(true)
+    }, 30000)
   })
 })
