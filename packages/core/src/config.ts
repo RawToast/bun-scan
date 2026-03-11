@@ -319,8 +319,12 @@ async function tryLoadConfigFile(
       })
     } else if (isENOENT) {
       logger.debug(`Config file ${filename} not found (race condition handled)`)
+    } else {
+      logger.warn(`Failed to read config file ${filename}`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
     }
-    // For other errors (file not found, etc.), silently continue
     return null
   }
 }
