@@ -1,12 +1,34 @@
-import { beforeEach, describe, expect, test } from "bun:test"
+import { beforeEach, afterEach, describe, expect, test } from "bun:test"
 import type { VulnerabilitySource } from "@repo/core"
 import { createNpmSource } from "../index.js"
 import { NpmAuditResponseSchema } from "../schema.js"
 import { createAdvisoryProcessor } from "../processor.js"
+import { setSleep, resetSleep } from "@repo/core"
+
+// Helper to create a proper Bun.Security.Package
+const makePackage = (name: string, version: string): Bun.Security.Package => ({
+  name,
+  version,
+  tarball: `https://registry.npmjs.org/${name}/-/${name}-${version}.tgz`,
+  requestedRange: "*",
+})
+
+let originalLogLevel: string | undefined
 
 describe("NpmSource", () => {
   beforeEach(() => {
-    process.env.BUN_SCAN_LOG_LEVEL = "error"
+    originalLogLevel = Bun.env.BUN_SCAN_LOG_LEVEL
+    Bun.env.BUN_SCAN_LOG_LEVEL = "error"
+    setSleep(async () => {})
+  })
+
+  afterEach(() => {
+    resetSleep()
+    if (originalLogLevel === undefined) {
+      delete Bun.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      Bun.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
   })
 
   test("implements VulnerabilitySource interface", () => {
@@ -146,15 +168,16 @@ describe("npm bulk response parsing", () => {
 
 describe("AdvisoryProcessor ignore configuration", () => {
   beforeEach(() => {
-    process.env.BUN_SCAN_LOG_LEVEL = "error"
+    originalLogLevel = Bun.env.BUN_SCAN_LOG_LEVEL
+    Bun.env.BUN_SCAN_LOG_LEVEL = "error"
   })
 
-  // Helper to create a proper Bun.Security.Package
-  const makePackage = (name: string, version: string): Bun.Security.Package => ({
-    name,
-    version,
-    tarball: `https://registry.npmjs.org/${name}/-/${name}-${version}.tgz`,
-    requestedRange: "*",
+  afterEach(() => {
+    if (originalLogLevel === undefined) {
+      delete Bun.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      Bun.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
   })
 
   test("ignores globally ignored advisories by id", () => {
@@ -321,5 +344,185 @@ describe("AdvisoryProcessor ignore configuration", () => {
     const result = processor.processAdvisories(advisories, packages)
     expect(result).toHaveLength(1)
     expect(result[0]!.aliases).toEqual([])
+  })
+})
+
+describe("NpmSource discriminator regression tests", () => {
+  // Helper to mock bulk fetch - supports error throw or success response
+  const withMockedBulkFetch = async (
+    options: { error: string } | { response: Record<string, unknown> },
+    fn: () => Promise<unknown>,
+  ): Promise<void> => {
+    const originalFetch = globalThis.fetch
+    const mockFetch = async (url: string | Request | URL, _options?: RequestInit) => {
+      // Normalize URL: handle Request objects which don't have a working toString() for URL matching
+      const urlStr = url instanceof Request ? url.url : url.toString()
+      if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
+        if ("error" in options) {
+          throw new Error(options.error)
+        }
+        return new Response(JSON.stringify(options.response), { status: 200 })
+      }
+      // Fail hard on unexpected external requests instead of delegating to originalFetch
+      throw new Error(`Unexpected external request to ${urlStr}`)
+    }
+    // @ts-expect-error - assigning mock for testing
+    globalThis.fetch = mockFetch
+
+    try {
+      await fn()
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  }
+
+  beforeEach(() => {
+    originalLogLevel = Bun.env.BUN_SCAN_LOG_LEVEL
+    Bun.env.BUN_SCAN_LOG_LEVEL = "error"
+    setSleep(async () => {})
+  })
+
+  afterEach(() => {
+    resetSleep()
+    if (originalLogLevel === undefined) {
+      delete Bun.env.BUN_SCAN_LOG_LEVEL
+    } else {
+      Bun.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+    }
+  })
+
+  test("createNpmSource({ failOnScannerError: true }) throws on bulk query failure", async () => {
+    const source = createNpmSource({ failOnScannerError: true })
+    const packages = [makePackage("pkg-a", "1.0.0"), makePackage("pkg-b", "2.0.0")]
+
+    await withMockedBulkFetch({ error: "Network error during bulk query" }, async () => {
+      // Should throw because failOnScannerError was correctly passed through via discriminator
+      await expect(source.scan(packages)).rejects.toThrow("Network error during bulk query")
+    })
+  })
+
+  test("createNpmSource({ failOnScannerError: false }) continues on bulk query failure", async () => {
+    const source = createNpmSource({ failOnScannerError: false })
+    const packages = [makePackage("pkg-a", "1.0.0"), makePackage("pkg-b", "2.0.0")]
+
+    await withMockedBulkFetch({ error: "Network error during bulk query" }, async () => {
+      // Should not throw, should return empty results
+      const result = await source.scan(packages)
+      expect(result).toEqual([])
+    })
+  })
+
+  test("createNpmSource({ failOnScannerError: true, npm: {...} }) throws on bulk query failure", async () => {
+    const source = createNpmSource({ failOnScannerError: true, npm: { timeoutMs: 30000 } })
+    const packages = [makePackage("pkg-a", "1.0.0")]
+
+    await withMockedBulkFetch({ error: "Network error during bulk query" }, async () => {
+      // Should throw because failOnScannerError was correctly passed through
+      await expect(source.scan(packages)).rejects.toThrow("Network error during bulk query")
+    })
+  })
+
+  test("legacy createNpmSource({ ignore: [...] }) does not throw on failure (discriminator regression)", async () => {
+    // This tests that legacy format (plain IgnoreConfig) is correctly identified
+    // and failOnScannerError is NOT set (defaults to undefined/false)
+    const source = createNpmSource({ ignore: ["CVE-2024-1234"] }) // Legacy: ignore as array
+    const packages = [makePackage("pkg-a", "1.0.0")]
+
+    await withMockedBulkFetch({ error: "Network error during bulk query" }, async () => {
+      // Legacy format should NOT throw (failOnScannerError is undefined/false by default)
+      const result = await source.scan(packages)
+      expect(result).toEqual([])
+    })
+  })
+
+  test("legacy createNpmSource(packages) does not throw on failure (discriminator regression)", async () => {
+    // Legacy format with packages (but without new format keys like failOnScannerError)
+    const source = createNpmSource({ packages: { "pkg-a": { vulnerabilities: [] } } })
+    const packages = [makePackage("pkg-a", "1.0.0")]
+
+    await withMockedBulkFetch({ error: "Network error during bulk query" }, async () => {
+      // Legacy format should NOT throw (failOnScannerError is undefined/false by default)
+      const result = await source.scan(packages)
+      expect(result).toEqual([])
+    })
+  })
+
+  test("mixed legacy ignore array with failOnScannerError preserves ignore config", async () => {
+    const source = createNpmSource({ ignore: ["CVE-2024-1234"], failOnScannerError: true })
+    const packages = [makePackage("pkg-a", "0.5.0")]
+
+    await withMockedBulkFetch(
+      {
+        response: {
+          "pkg-a": [
+            {
+              id: 999999,
+              url: "https://example.com/advisories/CVE-2024-1234",
+              title: "Test",
+              severity: "high",
+              vulnerable_versions: "<1.0.0",
+              cves: ["CVE-2024-1234"],
+            },
+          ],
+        },
+      },
+      async () => {
+        const result = await source.scan(packages)
+        expect(result).toHaveLength(0)
+      },
+    )
+  })
+
+  test("mixed legacy packages config with failOnScannerError preserves packages config", async () => {
+    const source = createNpmSource({
+      packages: { "pkg-a": { vulnerabilities: ["CVE-2024-5678"] } },
+      failOnScannerError: true,
+    })
+    const packages = [makePackage("pkg-a", "0.5.0")]
+
+    await withMockedBulkFetch(
+      {
+        response: {
+          "pkg-a": [
+            {
+              id: 999998,
+              url: "https://example.com/advisories/CVE-2024-5678",
+              title: "Test",
+              severity: "moderate",
+              vulnerable_versions: "<1.0.0",
+              cves: ["CVE-2024-5678"],
+            },
+          ],
+        },
+      },
+      async () => {
+        const result = await source.scan(packages)
+        expect(result).toHaveLength(0)
+      },
+    )
+  })
+
+  // Failure-path regression tests: verify failOnScannerError survives in mixed calls
+  test("mixed legacy ignore array with failOnScannerError rejects on failure", async () => {
+    const source = createNpmSource({ ignore: ["CVE-2024-1234"], failOnScannerError: true })
+    const packages = [makePackage("pkg-a", "0.5.0")]
+
+    // Should throw even with ignore config present
+    await withMockedBulkFetch({ error: "Network error during bulk query" }, async () => {
+      await expect(source.scan(packages)).rejects.toThrow("Network error during bulk query")
+    })
+  })
+
+  test("mixed legacy packages config with failOnScannerError rejects on failure", async () => {
+    const source = createNpmSource({
+      packages: { "pkg-a": { vulnerabilities: ["CVE-2024-5678"] } },
+      failOnScannerError: true,
+    })
+    const packages = [makePackage("pkg-a", "0.5.0")]
+
+    // Should throw even with packages config present
+    await withMockedBulkFetch({ error: "Network error during bulk query" }, async () => {
+      await expect(source.scan(packages)).rejects.toThrow("Network error during bulk query")
+    })
   })
 })

@@ -85,6 +85,9 @@ export const ENV = {
 
   /** Disable batch queries */
   DISABLE_BATCH: "OSV_DISABLE_BATCH",
+
+  /** Fail on scanner error (strict mode) - overrides config file (escape hatch) */
+  FAIL_ON_SCANNER_ERROR: "BUN_SCAN_FAIL_ON_SCANNER_ERROR",
 } as const
 
 /**

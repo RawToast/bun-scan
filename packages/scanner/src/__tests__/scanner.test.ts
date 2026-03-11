@@ -1,7 +1,44 @@
-import { describe, expect, test } from "bun:test"
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test"
+import { resetSleep, setSleep } from "@repo/core"
 import { scanner } from ".."
 
+const ENV_VAR = "BUN_SCAN_FAIL_ON_SCANNER_ERROR"
+
+/**
+ * Helper to clean up config files for test filesystem isolation
+ */
+async function cleanupConfigFiles(): Promise<void> {
+  const files = [".bun-scan.json", ".bun-scan.config.json"]
+  for (const file of files) {
+    const f = Bun.file(file)
+    if (await f.exists()) {
+      const { unlink } = await import("node:fs/promises")
+      await unlink(file).catch(() => {})
+    }
+  }
+}
+
 describe("Scanner", () => {
+  let originalEnvValue: string | undefined
+
+  beforeEach(async () => {
+    // Snapshot the original env value for test isolation
+    originalEnvValue = Bun.env[ENV_VAR]
+    delete Bun.env[ENV_VAR]
+    // Ensure filesystem isolation - remove any ambient config files
+    await cleanupConfigFiles()
+  })
+
+  afterEach(async () => {
+    // Restore the original env value instead of just deleting
+    if (originalEnvValue === undefined) {
+      delete Bun.env[ENV_VAR]
+    } else {
+      Bun.env[ENV_VAR] = originalEnvValue
+    }
+    await cleanupConfigFiles()
+  })
+
   describe("Interface Compliance", () => {
     test("implements Bun.Security.Scanner interface", () => {
       expect(scanner).toBeDefined()
@@ -175,7 +212,7 @@ describe("Scanner", () => {
 
       const result = await scanner.scan({ packages })
 
-      expect(Array.isArray(result)).toBe(true)
+      expect(result).toEqual([])
     })
 
     test("never throws errors", async () => {
@@ -303,5 +340,119 @@ describe("Scanner", () => {
       // Should complete within 30 seconds
       expect(duration).toBeLessThan(30000)
     }, 35000) // 35 second timeout for this test
+  })
+
+  describe("failOnScannerError behavior", () => {
+    beforeAll(() => setSleep(() => Promise.resolve()))
+    afterAll(() => resetSleep())
+
+    test("re-throws scanner errors when failOnScannerError is true in config", async () => {
+      await Bun.write(
+        ".bun-scan.json",
+        JSON.stringify({
+          failOnScannerError: true,
+          source: "npm",
+          npm: { registryUrl: "http://127.0.0.1:1", timeoutMs: 1000 },
+        }),
+      )
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      await expect(scanner.scan({ packages })).rejects.toThrow()
+    }, 5000)
+
+    test("re-throws scanner errors when env var is set", async () => {
+      Bun.env[ENV_VAR] = "true"
+      await Bun.write(
+        ".bun-scan.json",
+        JSON.stringify({
+          source: "npm",
+          npm: { registryUrl: "http://127.0.0.1:1", timeoutMs: 1000 },
+        }),
+      )
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      await expect(scanner.scan({ packages })).rejects.toThrow()
+    }, 5000)
+
+    test("does not throw when failOnScannerError is false (default)", async () => {
+      await Bun.write(
+        ".bun-scan.json",
+        JSON.stringify({
+          source: "npm",
+          npm: { registryUrl: "http://127.0.0.1:1", timeoutMs: 1000 },
+        }),
+      )
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      const result = await scanner.scan({ packages })
+      expect(result).toEqual([])
+    }, 5000)
+
+    test("re-throws on malformed config when env var is set (bootstrap path)", async () => {
+      Bun.env[ENV_VAR] = "true"
+      await Bun.write(".bun-scan.json", "{ invalid json")
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      await expect(scanner.scan({ packages })).rejects.toThrow(/failed to load config/)
+    })
+
+    test("env var overrides config file when they disagree (config=false, env=true)", async () => {
+      // Config file says: failOnScannerError = false
+      // Env var says: BUN_SCAN_FAIL_ON_SCANNER_ERROR = true
+      // Env should win - scanner should throw
+      await Bun.write(
+        ".bun-scan.json",
+        JSON.stringify({
+          failOnScannerError: false,
+          source: "npm",
+          npm: { registryUrl: "http://127.0.0.1:1", timeoutMs: 1000 },
+        }),
+      )
+      Bun.env[ENV_VAR] = "true"
+
+      const packages: Bun.Security.Package[] = [
+        {
+          name: "test-pkg",
+          version: "1.0.0",
+          requestedRange: "^1.0.0",
+          tarball: "https://registry.npmjs.org/test-pkg/-/test-pkg-1.0.0.tgz",
+        },
+      ]
+
+      // Env wins: scanner should throw because env=true overrides config=false
+      await expect(scanner.scan({ packages })).rejects.toThrow()
+    }, 5000)
   })
 })

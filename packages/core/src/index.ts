@@ -29,5 +29,6 @@ export {
   ConfigSchema,
   IgnoreConfigSchema,
   loadConfig,
+  parseEnvBoolean,
   shouldIgnoreVulnerability,
 } from "./config.js"

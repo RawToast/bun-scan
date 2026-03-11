@@ -17,6 +17,8 @@ export interface NpmAuditClient {
 /** Options for creating npm audit client */
 export interface CreateNpmAuditClientOptions {
   npm?: NpmConfig
+  /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
+  failOnScannerError?: boolean
 }
 
 /**
@@ -27,6 +29,7 @@ export function createNpmAuditClient(options: CreateNpmAuditClientOptions = {}):
   const npmConfig = options.npm ?? CONFIG_DEFAULTS.npm
   const registryUrl = npmConfig.registryUrl ?? NPM_AUDIT_API.REGISTRY_URL
   const timeout = npmConfig.timeoutMs ?? NPM_AUDIT_API.TIMEOUT_MS
+  const failOnError = options.failOnScannerError ?? false
 
   /**
    * Deduplicate packages by name@version to avoid redundant queries
@@ -150,8 +153,19 @@ export function createNpmAuditClient(options: CreateNpmAuditClientOptions = {}):
         const batchAdvisories = await executeBulkQuery(payload)
         advisories.push(...batchAdvisories)
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+
+        // Strict mode: rethrow instead of continuing with next batch
+        if (failOnError) {
+          logger.error(`Batch query failed for ${batch.length} packages (strict mode)`, {
+            error: message,
+            startIndex: i,
+          })
+          throw error
+        }
+
         logger.error(`Batch query failed for ${batch.length} packages`, {
-          error: error instanceof Error ? error.message : String(error),
+          error: message,
           startIndex: i,
         })
         // Continue with next batch rather than failing completely
@@ -182,7 +196,28 @@ export function createNpmAuditClient(options: CreateNpmAuditClientOptions = {}):
       return await queryInBatches(uniquePackages)
     }
 
-    return await executeBulkQuery(requestPayload)
+    // Single query - wrap with error handling for strict mode
+    try {
+      return await executeBulkQuery(requestPayload)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+
+      // Strict mode: rethrow instead of returning empty
+      if (failOnError) {
+        logger.error(`Bulk query failed (strict mode)`, {
+          error: message,
+          packageCount: uniquePackages.length,
+        })
+        throw error
+      }
+
+      logger.error(`Bulk query failed`, {
+        error: message,
+        packageCount: uniquePackages.length,
+      })
+      // Return empty array in lenient mode
+      return []
+    }
   }
 
   return {

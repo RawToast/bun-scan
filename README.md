@@ -94,6 +94,15 @@ All settings can be configured via `.bun-scan.json`:
 }
 ```
 
+**Strict Mode Example:**
+
+```json
+{
+  "failOnScannerError": true,
+  "source": "npm"
+}
+```
+
 #### Suppress Warning Prompts
 
 Set `bunReportWarnings` to `false` to print warning-level advisories without triggering Bun's install prompt:
@@ -125,6 +134,8 @@ export NPM_SCANNER_TIMEOUT_MS=30000
 ```
 
 **Precedence**: Config file values override environment variables, which override defaults.
+
+**Exception**: `BUN_SCAN_FAIL_ON_SCANNER_ERROR` is a documented exception — when set, this environment variable always takes precedence over any config file value. This enables strict mode to be enabled via CI/CD without modifying project configuration files.
 
 ### 5. Optional: Vulnerability Sources
 
@@ -161,6 +172,33 @@ When using `both`, advisories are deduplicated by package when they share IDs or
 - **CVSS Score**: < 7.0 (Medium/Low)
 - **Database Severity**: MEDIUM, LOW, or unspecified
 - **Action**: User is prompted to continue or cancel
+
+### Strict Mode
+
+By default, bun-scan is fail-open: if the vulnerability source is unreachable or the scanner errors, installation proceeds. This ensures scanner issues don't block development.
+
+For CI and compliance environments, enable strict mode to block installation on any scanner error:
+
+```json
+{
+  "failOnScannerError": true,
+  "source": "npm"
+}
+```
+
+Or via environment variable (overrides config file - escape hatch):
+
+```bash
+BUN_SCAN_FAIL_ON_SCANNER_ERROR=true bun install
+```
+
+**Behavior:**
+
+- Every configured source must succeed — if using `source: "both"`, both OSV and npm must respond
+- Malformed config files are fatal when the env var is set
+- Missing config files are not fatal (defaults are used)
+
+> **Tip:** Use a single source (`"osv"` or `"npm"`) with strict mode to minimize external dependencies.
 
 ## Usage Examples
 
@@ -211,7 +249,7 @@ bun test
 bun test --coverage
 
 # Type checking
-bun run typecheck
+bun run compile
 
 # Linting
 bun run lint
@@ -221,26 +259,28 @@ bun run lint
 
 ### Config File Options
 
-| Option              | Type    | Default                      | Description                                                     |
-| ------------------- | ------- | ---------------------------- | --------------------------------------------------------------- |
-| `source`            | string  | `"osv"`                      | Vulnerability source: `osv`, `npm`, or `both`                   |
-| `bunReportWarnings` | boolean | `true`                       | Report warnings to Bun (causes prompt). Set `false` to suppress |
-| `osv.apiBaseUrl`    | string  | `https://api.osv.dev/v1`     | OSV API base URL                                                |
-| `osv.timeoutMs`     | number  | `30000`                      | OSV request timeout in milliseconds                             |
-| `osv.disableBatch`  | boolean | `false`                      | Disable batch queries (use individual queries)                  |
-| `npm.registryUrl`   | string  | `https://registry.npmjs.org` | npm registry URL                                                |
-| `npm.timeoutMs`     | number  | `30000`                      | npm request timeout in milliseconds                             |
+| Option               | Type    | Default                      | Description                                                     |
+| -------------------- | ------- | ---------------------------- | --------------------------------------------------------------- |
+| `source`             | string  | `"osv"`                      | Vulnerability source: `osv`, `npm`, or `both`                   |
+| `failOnScannerError` | boolean | `false`                      | Fail on scanner errors and block install                        |
+| `bunReportWarnings`  | boolean | `true`                       | Report warnings to Bun (causes prompt). Set `false` to suppress |
+| `osv.apiBaseUrl`     | string  | `https://api.osv.dev/v1`     | OSV API base URL                                                |
+| `osv.timeoutMs`      | number  | `30000`                      | OSV request timeout in milliseconds                             |
+| `osv.disableBatch`   | boolean | `false`                      | Disable batch queries (use individual queries)                  |
+| `npm.registryUrl`    | string  | `https://registry.npmjs.org` | npm registry URL                                                |
+| `npm.timeoutMs`      | number  | `30000`                      | npm request timeout in milliseconds                             |
 
 ### Environment Variables (Fallback)
 
-| Environment Variable       | Default                      | Description                             |
-| -------------------------- | ---------------------------- | --------------------------------------- |
-| `BUN_SCAN_LOG_LEVEL`       | `info`                       | Logging level: debug, info, warn, error |
-| `OSV_API_BASE_URL`         | `https://api.osv.dev/v1`     | OSV API base URL                        |
-| `OSV_TIMEOUT_MS`           | `30000`                      | Request timeout in milliseconds         |
-| `OSV_DISABLE_BATCH`        | `false`                      | Disable batch queries                   |
-| `NPM_SCANNER_REGISTRY_URL` | `https://registry.npmjs.org` | npm registry URL                        |
-| `NPM_SCANNER_TIMEOUT_MS`   | `30000`                      | npm request timeout in milliseconds     |
+| Environment Variable             | Default                      | Description                                                   |
+| -------------------------------- | ---------------------------- | ------------------------------------------------------------- |
+| `BUN_SCAN_LOG_LEVEL`             | `info`                       | Logging level: debug, info, warn, error                       |
+| `BUN_SCAN_FAIL_ON_SCANNER_ERROR` | `false`                      | Fail on scanner errors (overrides config file - escape hatch) |
+| `OSV_API_BASE_URL`               | `https://api.osv.dev/v1`     | OSV API base URL                                              |
+| `OSV_TIMEOUT_MS`                 | `30000`                      | Request timeout in milliseconds                               |
+| `OSV_DISABLE_BATCH`              | `false`                      | Disable batch queries                                         |
+| `NPM_SCANNER_REGISTRY_URL`       | `https://registry.npmjs.org` | npm registry URL                                              |
+| `NPM_SCANNER_TIMEOUT_MS`         | `30000`                      | npm request timeout in milliseconds                           |
 
 > **Note**: `BUN_SCAN_LOG_LEVEL` must be set via environment variable for runtime control, as the logger initializes before the config file is loaded.
 

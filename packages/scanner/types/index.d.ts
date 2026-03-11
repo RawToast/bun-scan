@@ -64,7 +64,7 @@ export declare const DEFAULT_RETRY_CONFIG: RetryConfig
 export declare function withRetry<T>(
   operation: () => Promise<T>,
   operationName: string,
-  config?: Partial<RetryConfig>,
+  config?: RetryConfig,
 ): Promise<T>
 
 // ============================================================================
@@ -86,6 +86,12 @@ export interface Config {
   source?: SourceType
   ignore?: string[]
   packages?: Record<string, IgnorePackageRule>
+  logLevel?: "debug" | "info" | "warn" | "error"
+  bunReportWarnings?: boolean
+  /** Fail on scanner errors (block install). Env var overrides config file (escape hatch). */
+  failOnScannerError?: boolean
+  osv?: OsvConfig
+  npm?: NpmConfig
 }
 
 export interface OsvConfig {
@@ -94,9 +100,29 @@ export interface OsvConfig {
   disableBatch?: boolean
 }
 
+export interface NpmConfig {
+  registryUrl?: string
+  timeoutMs?: number
+}
+
 export interface CreateOSVSourceOptions {
-  ignore?: IgnoreConfig
+  /** Legacy array form or new object form */
+  ignore?: IgnoreConfig | string[]
+  /** Legacy packages config (when ignore is not an object) */
+  packages?: Record<string, IgnorePackageRule>
   osv?: OsvConfig
+  /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
+  failOnScannerError?: boolean
+}
+
+export interface CreateNpmSourceOptions {
+  /** Legacy array form or new object form */
+  ignore?: IgnoreConfig | string[]
+  /** Legacy packages config (when ignore is not an object) */
+  packages?: Record<string, IgnorePackageRule>
+  npm?: NpmConfig
+  /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
+  failOnScannerError?: boolean
 }
 
 export interface CompiledPackageRule {
@@ -109,6 +135,24 @@ export interface CompiledIgnoreConfig {
   ignoreSet: Set<string>
   packages: Map<string, CompiledPackageRule>
 }
+
+export interface ConfigDefaults {
+  readonly logLevel: "debug" | "info" | "warn" | "error"
+  readonly bunReportWarnings: boolean
+  readonly failOnScannerError: boolean
+  readonly osv: {
+    readonly apiBaseUrl: string
+    readonly timeoutMs: number
+    readonly disableBatch: boolean
+  }
+  readonly npm: {
+    readonly registryUrl: string
+    readonly timeoutMs: number
+  }
+}
+
+/** Default configuration values */
+export declare const CONFIG_DEFAULTS: ConfigDefaults
 
 /** Zod schema for ignore config validation */
 export declare const IgnoreConfigSchema: z.ZodObject<{
@@ -139,6 +183,22 @@ export declare const ConfigSchema: z.ZodObject<{
       }>
     >
   >
+  logLevel: z.ZodOptional<z.ZodEnum<["debug", "info", "warn", "error"]>>
+  bunReportWarnings: z.ZodOptional<z.ZodBoolean>
+  failOnScannerError: z.ZodOptional<z.ZodBoolean>
+  osv: z.ZodOptional<
+    z.ZodObject<{
+      apiBaseUrl: z.ZodOptional<z.ZodString>
+      timeoutMs: z.ZodOptional<z.ZodNumber>
+      disableBatch: z.ZodOptional<z.ZodBoolean>
+    }>
+  >
+  npm: z.ZodOptional<
+    z.ZodObject<{
+      registryUrl: z.ZodOptional<z.ZodString>
+      timeoutMs: z.ZodOptional<z.ZodNumber>
+    }>
+  >
 }>
 
 /** Load config from .bun-scan.json or .bun-scan.config.json */
@@ -149,11 +209,11 @@ export declare function compileIgnoreConfig(config: IgnoreConfig): CompiledIgnor
 
 /** Check if a vulnerability should be ignored */
 export declare function shouldIgnoreVulnerability(
-  compiledConfig: CompiledIgnoreConfig,
   vulnId: string,
-  packageName: string,
-  aliases?: string[],
-): boolean
+  vulnAliases: string[] | undefined,
+  packageName: string | undefined,
+  config: CompiledIgnoreConfig,
+): { ignored: boolean; reason?: string }
 
 // ============================================================================
 // Source Factories
@@ -165,15 +225,22 @@ export declare function createOSVSource(
 ): VulnerabilitySource
 
 /** Create an npm audit vulnerability source */
-export declare function createNpmSource(config?: IgnoreConfig): VulnerabilitySource
+export declare function createNpmSource(
+  options?: CreateNpmSourceOptions | IgnoreConfig,
+): VulnerabilitySource
 
 /** Create a vulnerability source by type */
-export declare function createSource(type: SourceType, config?: IgnoreConfig): VulnerabilitySource
+export declare function createSource(
+  type: "osv" | "npm",
+  config: Config,
+  failOnScannerError?: boolean,
+): VulnerabilitySource
 
 /** Create all sources for a given type (both = OSV + npm) */
 export declare function createSources(
   type: SourceType,
-  config?: IgnoreConfig,
+  config: Config,
+  failOnScannerError?: boolean,
 ): VulnerabilitySource[]
 
 // ============================================================================
@@ -184,8 +251,17 @@ export interface MultiSourceScanner {
   scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]>
 }
 
+/** Options for multi-source scanner */
+export interface MultiSourceScannerOptions {
+  /** When true, throw if any configured source fails */
+  failOnScannerError?: boolean
+}
+
 /** Create a scanner that queries multiple sources in parallel */
-export declare function createMultiSourceScanner(sources: VulnerabilitySource[]): MultiSourceScanner
+export declare function createMultiSourceScanner(
+  sources: VulnerabilitySource[],
+  options?: MultiSourceScannerOptions,
+): MultiSourceScanner
 
 // ============================================================================
 // Main Scanner Export

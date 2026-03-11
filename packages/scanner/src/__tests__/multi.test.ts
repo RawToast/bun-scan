@@ -122,4 +122,154 @@ describe("MultiSourceScanner", () => {
     // Should still get results from working source
     expect(results).toHaveLength(1)
   })
+
+  test("handles synchronously throwing source (not just async errors)", async () => {
+    // This is the bug: if source.scan() throws synchronously (before returning a promise),
+    // it should be captured by Promise.allSettled, not escape immediately
+    const syncThrowSource: VulnerabilitySource = {
+      name: "sync-throw",
+      // Note: NOT async - this is a synchronous throw
+      scan() {
+        throw new Error("sync error from source")
+      },
+    }
+
+    const workingSource: VulnerabilitySource = {
+      name: "working",
+      async scan() {
+        return [makeAdvisory({ id: "CVE-1", package: "pkg" })]
+      },
+    }
+
+    const scanner = createMultiSourceScanner([syncThrowSource, workingSource])
+    const results = await scanner.scan([makePackage("pkg", "1.0.0")])
+
+    // Should still get results from working source - sync throw should NOT escape
+    expect(results).toHaveLength(1)
+  })
+
+  test("throws on sync-throwing source when failOnScannerError is true", async () => {
+    const syncThrowSource: VulnerabilitySource = {
+      name: "sync-fail",
+      // Note: NOT async - this is a synchronous throw
+      scan() {
+        throw new Error("sync failure")
+      },
+    }
+
+    const scanner = createMultiSourceScanner([syncThrowSource], {
+      failOnScannerError: true,
+    })
+
+    await expect(scanner.scan([makePackage("pkg", "1.0.0")])).rejects.toThrow()
+  })
+
+  describe("failOnScannerError behavior", () => {
+    test("throws when any source fails and failOnScannerError is true", async () => {
+      const failingSource: VulnerabilitySource = {
+        name: "failing",
+        async scan() {
+          throw new Error("API error")
+        },
+      }
+
+      const workingSource: VulnerabilitySource = {
+        name: "working",
+        async scan() {
+          return [makeAdvisory({ id: "CVE-1", package: "pkg" })]
+        },
+      }
+
+      const scanner = createMultiSourceScanner([failingSource, workingSource], {
+        failOnScannerError: true,
+      })
+
+      await expect(scanner.scan([makePackage("pkg", "1.0.0")])).rejects.toThrow()
+    })
+
+    test("throws with descriptive error when all sources fail", async () => {
+      const failing1: VulnerabilitySource = {
+        name: "osv",
+        async scan() {
+          throw new Error("timeout")
+        },
+      }
+
+      const failing2: VulnerabilitySource = {
+        name: "npm",
+        async scan() {
+          throw new Error("network error")
+        },
+      }
+
+      const scanner = createMultiSourceScanner([failing1, failing2], {
+        failOnScannerError: true,
+      })
+
+      try {
+        await scanner.scan([makePackage("pkg", "1.0.0")])
+        expect.unreachable("should have thrown")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        const message = (error as Error).message
+
+        // Verify overall pattern matches
+        expect(message).toMatch(/scan failed/i)
+
+        // Verify both source names appear
+        expect(message).toContain("osv")
+        expect(message).toContain("npm")
+
+        // Verify both error reasons appear
+        expect(message).toContain("timeout")
+        expect(message).toContain("network error")
+      }
+    })
+
+    test("error message includes source names and reasons", async () => {
+      const failing: VulnerabilitySource = {
+        name: "osv",
+        async scan() {
+          throw new Error("connection refused")
+        },
+      }
+
+      const scanner = createMultiSourceScanner([failing], {
+        failOnScannerError: true,
+      })
+
+      try {
+        await scanner.scan([makePackage("pkg", "1.0.0")])
+        expect.unreachable("should have thrown")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        const message = (error as Error).message
+        expect(message).toContain("osv")
+        expect(message).toContain("connection refused")
+      }
+    })
+
+    test("does not throw on source failure when failOnScannerError is false", async () => {
+      const failingSource: VulnerabilitySource = {
+        name: "failing",
+        async scan() {
+          throw new Error("API error")
+        },
+      }
+
+      const workingSource: VulnerabilitySource = {
+        name: "working",
+        async scan() {
+          return [makeAdvisory({ id: "CVE-1", package: "pkg" })]
+        },
+      }
+
+      const scanner = createMultiSourceScanner([failingSource, workingSource], {
+        failOnScannerError: false,
+      })
+      const results = await scanner.scan([makePackage("pkg", "1.0.0")])
+
+      expect(results).toHaveLength(1)
+    })
+  })
 })

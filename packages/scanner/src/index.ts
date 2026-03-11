@@ -1,6 +1,6 @@
 /// <reference types="bun-types" />
 import "@repo/core"
-import { loadConfig, logger, CONFIG_DEFAULTS } from "@repo/core"
+import { ENV, loadConfig, logger, CONFIG_DEFAULTS, parseEnvBoolean } from "@repo/core"
 import { createSources } from "./sources/factory.js"
 import { createMultiSourceScanner } from "./sources/multi.js"
 
@@ -41,7 +41,7 @@ export { createNpmSource } from "@repo/source-npm"
 // Export scanner-specific utilities
 export { createSource, createSources } from "./sources/factory.js"
 export { createMultiSourceScanner } from "./sources/multi.js"
-export type { MultiSourceScanner } from "./sources/multi.js"
+export type { MultiSourceScanner, MultiSourceScannerOptions } from "./sources/multi.js"
 
 /**
  * Bun Security Scanner with configurable vulnerability sources
@@ -51,6 +51,10 @@ export const scanner: Bun.Security.Scanner = {
   version: "1",
 
   async scan({ packages }) {
+    // Resolve strict mode from env first (bootstrap — always available)
+    // Env var is the escape hatch and overrides config file later
+    let failOnScannerError = parseEnvBoolean(ENV.FAIL_ON_SCANNER_ERROR) === true
+
     try {
       logger.debug(`Starting vulnerability scan for ${packages.length} packages`)
 
@@ -58,11 +62,17 @@ export const scanner: Bun.Security.Scanner = {
       const config = await loadConfig()
       const bunReportWarnings = config.bunReportWarnings ?? CONFIG_DEFAULTS.bunReportWarnings
 
+      // Update from config, but env var still overrides (escape hatch pattern)
+      // Config file value is used only if env var is not set
+      if (parseEnvBoolean(ENV.FAIL_ON_SCANNER_ERROR) === undefined) {
+        failOnScannerError = config.failOnScannerError ?? failOnScannerError
+      }
+
       // Create vulnerability sources based on config
-      const sources = createSources(config.source ?? "osv", config)
+      const sources = createSources(config.source ?? "osv", config, failOnScannerError)
 
       // Scan with all configured sources
-      const multiScanner = createMultiSourceScanner(sources)
+      const multiScanner = createMultiSourceScanner(sources, { failOnScannerError })
       const advisories = await multiScanner.scan(packages)
 
       logger.info(
@@ -92,6 +102,17 @@ export const scanner: Bun.Security.Scanner = {
       return advisories
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+
+      // Strict mode: re-throw to block install (fail-closed)
+      // In strict mode, the error IS the intended behavior - don't log as "unexpected"
+      if (failOnScannerError) {
+        logger.error("Scanner error in strict mode — failing scan", {
+          error: message,
+        })
+        throw error
+      }
+
+      // Lenient mode: log as unexpected (we're swallowing the error)
       logger.error("Scanner encountered an unexpected error", {
         error: message,
       })

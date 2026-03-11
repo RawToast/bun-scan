@@ -45,3 +45,7 @@ coverage/
 
 # NPM Registry
 .npmrc
+
+# Worktrees
+.worktrees/
+worktrees/

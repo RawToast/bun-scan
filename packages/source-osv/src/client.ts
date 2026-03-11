@@ -11,6 +11,8 @@ export interface OSVClient {
 /** Options for creating OSV client */
 export interface CreateOSVClientOptions {
   osv?: OsvConfig
+  /** When true, throw on internal errors (batch/query failures) instead of continuing with partial results */
+  failOnScannerError?: boolean
 }
 
 /**
@@ -22,6 +24,7 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
   const baseUrl = osvConfig.apiBaseUrl ?? OSV_API.BASE_URL
   const timeout = osvConfig.timeoutMs ?? OSV_API.TIMEOUT_MS
   const useBatch = !(osvConfig.disableBatch ?? false)
+  const failOnError = options.failOnScannerError ?? false
 
   /**
    * Deduplicate packages by name@version to avoid redundant queries
@@ -108,8 +111,18 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
         return OSVVulnerabilitySchema.parse(data)
       }, `Get vulnerability ${id}`)
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+
+      // Strict mode: rethrow instead of continuing with partial results
+      if (failOnError) {
+        logger.error(`Failed to fetch vulnerability ${id} (strict mode)`, {
+          error: message,
+        })
+        throw error
+      }
+
       logger.warn(`Failed to fetch vulnerability ${id}`, {
-        error: error instanceof Error ? error.message : String(error),
+        error: message,
       })
       return null
     }
@@ -131,6 +144,20 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
     for (let i = 0; i < uniqueIds.length; i += chunkSize) {
       const chunk = uniqueIds.slice(i, i + chunkSize)
       const chunkResults = await Promise.allSettled(chunk.map((id) => fetchSingleVulnerability(id)))
+
+      // In strict mode, any detail-fetch failure must reject the entire operation
+      if (failOnError) {
+        const rejections = chunkResults.filter((r) => r.status === "rejected")
+        if (rejections.length > 0) {
+          const firstError = rejections[0]!.reason
+          const message = firstError instanceof Error ? firstError.message : String(firstError)
+          logger.error(`Failed to fetch vulnerability details (strict mode)`, {
+            error: message,
+            failedCount: rejections.length,
+          })
+          throw firstError
+        }
+      }
 
       for (const result of chunkResults) {
         if (result.status === "fulfilled" && result.value) {
@@ -158,8 +185,19 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
         const batchIds = await executeBatchQuery(batchQueries)
         vulnerabilityIds.push(...batchIds)
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+
+        // Strict mode: rethrow instead of continuing with next batch
+        if (failOnError) {
+          logger.error(`Batch query failed for ${batchQueries.length} packages (strict mode)`, {
+            error: message,
+            startIndex: i,
+          })
+          throw error
+        }
+
         logger.error(`Batch query failed for ${batchQueries.length} packages`, {
-          error: error instanceof Error ? error.message : String(error),
+          error: message,
           startIndex: i,
         })
         // Continue with next batch rather than failing completely
@@ -215,10 +253,23 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
           break // No more pages
         }
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+
+        // In strict mode, any single-package query failure must reject the entire operation
+        if (failOnError) {
+          logger.error(
+            `Query failed for ${query.package?.name || "unknown"}@${query.version || "unknown"} (strict mode)`,
+            {
+              error: message,
+            },
+          )
+          throw error
+        }
+
         logger.warn(
           `Query failed for ${query.package?.name || "unknown"}@${query.version || "unknown"}`,
           {
-            error: error instanceof Error ? error.message : String(error),
+            error: message,
           },
         )
         break // Exit pagination loop on error
@@ -233,6 +284,20 @@ export function createOSVClient(options: CreateOSVClientOptions = {}): OSVClient
    */
   async function queryIndividually(queries: OSVQuery[]): Promise<OSVVulnerability[]> {
     const responses = await Promise.allSettled(queries.map((query) => querySinglePackage(query)))
+
+    // In strict mode, any individual-query failure must reject the entire operation
+    if (failOnError) {
+      const rejections = responses.filter((r) => r.status === "rejected")
+      if (rejections.length > 0) {
+        const firstError = rejections[0]!.reason
+        const message = firstError instanceof Error ? firstError.message : String(firstError)
+        logger.error(`Individual query failed (strict mode)`, {
+          error: message,
+          failedCount: rejections.length,
+        })
+        throw firstError
+      }
+    }
 
     const vulnerabilities: OSVVulnerability[] = []
     let successCount = 0
