@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test"
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test"
 import { loadConfig } from "../config.js"
 
 const ENV_VAR = "BUN_SCAN_FAIL_ON_SCANNER_ERROR"
@@ -269,5 +269,42 @@ describe("TOCTOU race condition handling in strict mode", () => {
     // Should return default config (env var still applies)
     expect(config.source).toBe("osv")
     expect(config.failOnScannerError).toBe(true)
+  })
+
+  test("logs and throws on non-ENOENT read failures in strict mode", async () => {
+    Bun.env[ENV_VAR] = "true"
+
+    const consoleErrorSpy = spyOn(console, "error").mockImplementation(() => {})
+
+    const mockFile = {
+      exists: async () => true,
+      json: async () => {
+        const error = new Error("Permission denied") as Error & { code: string }
+        error.code = "EACCES"
+        throw error
+      },
+    }
+
+    const originalBunFileFn = Bun.file
+    // @ts-expect-error - we're intentionally shadowing Bun.file for testing
+    Bun.file = (filename: string) => {
+      if (filename === ".bun-scan.json" || filename === ".bun-scan.config.json") {
+        return mockFile
+      }
+      return originalBunFileFn(filename)
+    }
+
+    try {
+      const { loadConfig } = await import("../config.js")
+      await expect(loadConfig()).rejects.toThrow("failed to load config file")
+    } finally {
+      Bun.file = originalBunFileFn
+    }
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to read config file .bun-scan.json"),
+    )
+
+    consoleErrorSpy.mockRestore()
   })
 })

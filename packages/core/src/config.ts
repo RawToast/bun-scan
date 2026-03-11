@@ -302,6 +302,11 @@ async function tryLoadConfigFile(
         return null
       }
 
+      logger.error(`Failed to read config file ${filename}`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
+
       const message = error instanceof Error ? error.message : String(error)
       throw new Error(
         `bun-scan: failed to load config file ${filename}: ${message}. ` +
