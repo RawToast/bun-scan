@@ -139,12 +139,13 @@ describe("OSVSource discriminator regression tests", () => {
     // and failOnScannerError is NOT set (defaults to undefined/false)
     const source = createOSVSource({ ignore: ["CVE-2024-1234"] }) // Legacy: ignore as array
 
-    // Mock fetch to throw for batch queries
+    // Mock fetch to throw for individual queries (single package uses /query, not querybatch)
     const originalFetch = globalThis.fetch
     const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
       const urlStr = url.toString()
-      if (urlStr.includes("querybatch")) {
-        throw new Error("Network error during batch query")
+      // Match individual query endpoint (not batch)
+      if (urlStr.includes("/query") && !urlStr.includes("querybatch")) {
+        throw new Error("Network error during individual query")
       }
       return originalFetch(url, options)
     }
@@ -166,12 +167,13 @@ describe("OSVSource discriminator regression tests", () => {
     // Legacy format with packages (but without new format keys like failOnScannerError)
     const source = createOSVSource({ packages: { "pkg-a": { vulnerabilities: [] } } })
 
-    // Mock fetch to throw for batch queries
+    // Mock fetch to throw for individual queries (single package uses /query, not querybatch)
     const originalFetch = globalThis.fetch
     const mockFetch = async (url: string | Request | URL, options?: RequestInit) => {
       const urlStr = url.toString()
-      if (urlStr.includes("querybatch")) {
-        throw new Error("Network error during batch query")
+      // Match individual query endpoint (not batch)
+      if (urlStr.includes("/query") && !urlStr.includes("querybatch")) {
+        throw new Error("Network error during individual query")
       }
       return originalFetch(url, options)
     }
