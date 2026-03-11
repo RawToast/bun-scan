@@ -355,14 +355,16 @@ describe("NpmSource discriminator regression tests", () => {
   ): Promise<void> => {
     const originalFetch = globalThis.fetch
     const mockFetch = async (url: string | Request | URL, _options?: RequestInit) => {
-      const urlStr = url.toString()
+      // Normalize URL: handle Request objects which don't have a working toString() for URL matching
+      const urlStr = url instanceof Request ? url.url : url.toString()
       if (urlStr.includes("-/npm/v1/security/advisories/bulk")) {
         if ("error" in options) {
           throw new Error(options.error)
         }
         return new Response(JSON.stringify(options.response), { status: 200 })
       }
-      return originalFetch(url, _options)
+      // Fail hard on unexpected external requests instead of delegating to originalFetch
+      throw new Error(`Unexpected external request to ${urlStr}`)
     }
     // @ts-expect-error - assigning mock for testing
     globalThis.fetch = mockFetch
