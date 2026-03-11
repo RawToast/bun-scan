@@ -7,17 +7,17 @@ let originalLogLevel: string | undefined
 
 describe("OSVSource", () => {
   beforeEach(() => {
-    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
-    process.env.BUN_SCAN_LOG_LEVEL = "error"
+    originalLogLevel = Bun.env.BUN_SCAN_LOG_LEVEL
+    Bun.env.BUN_SCAN_LOG_LEVEL = "error"
     setSleep(async () => {})
   })
 
   afterEach(() => {
     resetSleep()
     if (originalLogLevel === undefined) {
-      delete process.env.BUN_SCAN_LOG_LEVEL
+      delete Bun.env.BUN_SCAN_LOG_LEVEL
     } else {
-      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+      Bun.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
     }
   })
 
@@ -43,17 +43,17 @@ describe("OSVSource discriminator regression tests", () => {
   })
 
   beforeEach(() => {
-    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
-    process.env.BUN_SCAN_LOG_LEVEL = "error"
+    originalLogLevel = Bun.env.BUN_SCAN_LOG_LEVEL
+    Bun.env.BUN_SCAN_LOG_LEVEL = "error"
     setSleep(async () => {})
   })
 
   afterEach(() => {
     resetSleep()
     if (originalLogLevel === undefined) {
-      delete process.env.BUN_SCAN_LOG_LEVEL
+      delete Bun.env.BUN_SCAN_LOG_LEVEL
     } else {
-      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+      Bun.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
     }
   })
 

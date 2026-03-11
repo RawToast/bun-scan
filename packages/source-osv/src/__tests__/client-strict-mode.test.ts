@@ -13,8 +13,8 @@ describe("OSVClient strict mode behavior", () => {
   })
 
   beforeEach(() => {
-    originalLogLevel = process.env.BUN_SCAN_LOG_LEVEL
-    process.env.BUN_SCAN_LOG_LEVEL = "error"
+    originalLogLevel = Bun.env.BUN_SCAN_LOG_LEVEL
+    Bun.env.BUN_SCAN_LOG_LEVEL = "error"
     // Stub sleep to avoid slow tests due to retries
     setSleep(async () => {})
   })
@@ -22,9 +22,9 @@ describe("OSVClient strict mode behavior", () => {
   afterEach(() => {
     resetSleep()
     if (originalLogLevel === undefined) {
-      delete process.env.BUN_SCAN_LOG_LEVEL
+      delete Bun.env.BUN_SCAN_LOG_LEVEL
     } else {
-      process.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
+      Bun.env.BUN_SCAN_LOG_LEVEL = originalLogLevel
     }
   })
 
