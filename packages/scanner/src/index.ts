@@ -102,14 +102,20 @@ export const scanner: Bun.Security.Scanner = {
       return advisories
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+
+      // Strict mode: re-throw to block install (fail-closed)
+      // In strict mode, the error IS the intended behavior - don't log as "unexpected"
+      if (failOnScannerError) {
+        logger.error("Scanner error in strict mode — failing scan", {
+          error: message,
+        })
+        throw error
+      }
+
+      // Lenient mode: log as unexpected (we're swallowing the error)
       logger.error("Scanner encountered an unexpected error", {
         error: message,
       })
-
-      // Strict mode: re-throw to block install
-      if (failOnScannerError) {
-        throw error
-      }
 
       // Fail-safe: allow installation to proceed on scanner errors
       return []
