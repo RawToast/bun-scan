@@ -435,8 +435,8 @@ describe("NpmSource discriminator regression tests", () => {
     })
   })
 
-  test("legacy createNpmSource(ignoreObject) does not throw on failure (discriminator regression)", async () => {
-    // Legacy format with ignore as object (but without new format keys)
+  test("legacy createNpmSource(packages) does not throw on failure (discriminator regression)", async () => {
+    // Legacy format with packages (but without new format keys like failOnScannerError)
     const source = createNpmSource({ packages: { "pkg-a": { vulnerabilities: [] } } })
     const packages = [makePackage("pkg-a", "1.0.0")]
 

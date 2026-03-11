@@ -162,8 +162,8 @@ describe("OSVSource discriminator regression tests", () => {
     }
   })
 
-  test("legacy createOSVSource(ignoreObject) does not throw on failure (discriminator regression)", async () => {
-    // Legacy format with ignore as object (but without new format keys)
+  test("legacy createOSVSource(packages) does not throw on failure (discriminator regression)", async () => {
+    // Legacy format with packages (but without new format keys like failOnScannerError)
     const source = createOSVSource({ packages: { "pkg-a": { vulnerabilities: [] } } })
 
     // Mock fetch to throw for batch queries

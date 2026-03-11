@@ -289,8 +289,8 @@ async function tryLoadConfigFile(
 
     return parsed
   } catch (error) {
-    // CR6: Handle TOCTOU race condition - file may disappear between exists() and json()
-    // Check if error is ENOENT (file not found) - this should be non-fatal even in strict mode
+    // Handle TOCTOU race condition - file may disappear between exists() and json()
+    // ENOENT (file not found) should be non-fatal even in strict mode
     const isENOENT =
       error instanceof Error &&
       ("code" in error ? error.code === "ENOENT" : error.message.includes("No such file"))

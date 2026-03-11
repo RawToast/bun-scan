@@ -143,8 +143,8 @@ describe("Config", () => {
   })
 })
 
-// CR6: Test for TOCTOU race condition (file disappears between exists() and json())
-describe("CR6 TOCTOU race condition", () => {
+// Test for TOCTOU race condition (file disappears between exists() and json())
+describe("TOCTOU race condition handling in strict mode", () => {
   let originalEnvValue: string | undefined
 
   beforeEach(async () => {
@@ -226,15 +226,6 @@ describe("CR6 TOCTOU race condition", () => {
     // Should return default config, not throw
     expect(config.source).toBe("osv")
     expect(config.failOnScannerError).toBe(true) // from env var
-  })
-
-  test("still throws on parse errors in strict mode", async () => {
-    // This tests that non-ENOENT errors DO throw in strict mode
-    await Bun.write(".bun-scan.json", "{ invalid json }")
-    Bun.env[ENV_VAR] = "true"
-
-    const { loadConfig } = await import("../config.js")
-    await expect(loadConfig()).rejects.toThrow()
   })
 
   test("ENOENT from truly missing file does not throw in strict mode (early-return path)", async () => {

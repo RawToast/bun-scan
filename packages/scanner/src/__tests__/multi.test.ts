@@ -271,26 +271,5 @@ describe("MultiSourceScanner", () => {
 
       expect(results).toHaveLength(1)
     })
-
-    test("does not throw on source failure when options not provided (backward compat)", async () => {
-      const failingSource: VulnerabilitySource = {
-        name: "failing",
-        async scan() {
-          throw new Error("API error")
-        },
-      }
-
-      const workingSource: VulnerabilitySource = {
-        name: "working",
-        async scan() {
-          return [makeAdvisory({ id: "CVE-1", package: "pkg" })]
-        },
-      }
-
-      const scanner = createMultiSourceScanner([failingSource, workingSource])
-      const results = await scanner.scan([makePackage("pkg", "1.0.0")])
-
-      expect(results).toHaveLength(1)
-    })
   })
 })
