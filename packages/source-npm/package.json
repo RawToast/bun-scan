@@ -7,7 +7,7 @@
   "types": "./src/index.ts",
   "exports": "./src/index.ts",
   "scripts": {
-    "compile": "tsgo --noEmit",
+    "compile": "tsc --noEmit",
     "test": "bun test",
     "lint": "oxlint check"
   },

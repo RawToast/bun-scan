@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test"
 import { createMultiSourceScanner } from "../sources/multi.js"
-import type { VulnerabilitySource } from "@repo/core"
+import type { SecurityAdvisory, VulnerabilitySource } from "@repo/core"
 
 const makeAdvisory = (
-  overrides: Partial<Bun.Security.Advisory> & { id: string; package: string },
-): Bun.Security.Advisory => ({
+  overrides: Partial<SecurityAdvisory> & { id: string; package: string },
+): SecurityAdvisory => ({
   id: overrides.id,
   message: overrides.message ?? overrides.id,
   level: overrides.level ?? "warn",

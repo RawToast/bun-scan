@@ -10,6 +10,7 @@ export type {
   IgnoreConfig,
   IgnorePackageRule,
   FatalSeverity,
+  SecurityAdvisory,
   SourceType,
   VulnerabilitySource,
   Logger,

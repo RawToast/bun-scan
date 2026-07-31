@@ -3,17 +3,14 @@
  */
 
 import type { NpmAdvisory } from "./schema.js"
-import type { IgnoreConfig, CompiledIgnoreConfig } from "@repo/core"
+import type { IgnoreConfig, CompiledIgnoreConfig, SecurityAdvisory } from "@repo/core"
 import { compileIgnoreConfig, shouldIgnoreVulnerability, logger } from "@repo/core"
 import { mapSeverityToLevel } from "./severity.js"
 import { SECURITY } from "./constants.js"
 
 /** Advisory Processor interface */
 export interface AdvisoryProcessor {
-  processAdvisories(
-    advisories: NpmAdvisory[],
-    packages: Bun.Security.Package[],
-  ): Bun.Security.Advisory[]
+  processAdvisories(advisories: NpmAdvisory[], packages: Bun.Security.Package[]): SecurityAdvisory[]
 }
 
 /**
@@ -101,7 +98,7 @@ export function createAdvisoryProcessor(ignoreConfig: IgnoreConfig = {}): Adviso
     advisory: NpmAdvisory,
     pkg: Bun.Security.Package,
     aliases: string[],
-  ): Bun.Security.Advisory {
+  ): SecurityAdvisory {
     const level = mapSeverityToLevel(advisory.severity)
     const description = getAdvisoryDescription(advisory)
     const message = advisory.title || `Security advisory ${advisory.id}`
@@ -125,8 +122,8 @@ export function createAdvisoryProcessor(ignoreConfig: IgnoreConfig = {}): Adviso
     packages: Bun.Security.Package[],
     processedPairs: Set<string>,
     compiledConfig: CompiledIgnoreConfig,
-  ): Bun.Security.Advisory[] {
-    const bunAdvisories: Bun.Security.Advisory[] = []
+  ): SecurityAdvisory[] {
+    const bunAdvisories: SecurityAdvisory[] = []
 
     // Get package name from advisory (prefer 'name' over deprecated 'module_name')
     const advisoryPackageName = advisory.name || advisory.module_name
@@ -190,7 +187,7 @@ export function createAdvisoryProcessor(ignoreConfig: IgnoreConfig = {}): Adviso
   function processAdvisories(
     advisories: NpmAdvisory[],
     packages: Bun.Security.Package[],
-  ): Bun.Security.Advisory[] {
+  ): SecurityAdvisory[] {
     if (advisories.length === 0 || packages.length === 0) {
       return []
     }
@@ -200,7 +197,7 @@ export function createAdvisoryProcessor(ignoreConfig: IgnoreConfig = {}): Adviso
     // Reset ignored count for this batch
     ignoredCount = 0
 
-    const bunAdvisories: Bun.Security.Advisory[] = []
+    const bunAdvisories: SecurityAdvisory[] = []
     const processedPairs = new Set<string>() // Track processed advisory+package pairs
 
     for (const advisory of advisories) {

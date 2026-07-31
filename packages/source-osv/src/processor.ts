@@ -4,6 +4,7 @@ import { mapSeverityToLevel } from "./severity.js"
 import {
   type IgnoreConfig,
   type CompiledIgnoreConfig,
+  type SecurityAdvisory,
   compileIgnoreConfig,
   shouldIgnoreVulnerability,
   SECURITY,
@@ -21,7 +22,7 @@ export interface VulnerabilityProcessor {
   processVulnerabilities(
     vulnerabilities: OSVVulnerability[],
     packages: Bun.Security.Package[],
-  ): Bun.Security.Advisory[]
+  ): SecurityAdvisory[]
 }
 
 /**
@@ -96,10 +97,7 @@ export function createVulnerabilityProcessor(
   /**
    * Create a Bun security advisory from an OSV vulnerability and affected package
    */
-  function createAdvisory(
-    vuln: OSVVulnerability,
-    pkg: Bun.Security.Package,
-  ): Bun.Security.Advisory {
+  function createAdvisory(vuln: OSVVulnerability, pkg: Bun.Security.Package): SecurityAdvisory {
     const level = mapSeverityToLevel(vuln)
     const url = getVulnerabilityUrl(vuln)
     const description = getVulnerabilityDescription(vuln)
@@ -111,6 +109,7 @@ export function createVulnerabilityProcessor(
       package: pkg.name,
       url,
       description,
+      aliases: vuln.aliases ?? [],
     }
   }
 
@@ -123,8 +122,8 @@ export function createVulnerabilityProcessor(
     packagesByName: Map<string, Bun.Security.Package[]>,
     processedPairs: Set<string>,
     compiledConfig: CompiledIgnoreConfig,
-  ): Bun.Security.Advisory[] {
-    const advisories: Bun.Security.Advisory[] = []
+  ): SecurityAdvisory[] {
+    const advisories: SecurityAdvisory[] = []
 
     if (!vuln.affected) {
       logger.debug(`Vulnerability ${vuln.id} has no affected packages`)
@@ -187,7 +186,7 @@ export function createVulnerabilityProcessor(
   function processVulnerabilities(
     vulnerabilities: OSVVulnerability[],
     packages: Bun.Security.Package[],
-  ): Bun.Security.Advisory[] {
+  ): SecurityAdvisory[] {
     if (vulnerabilities.length === 0 || packages.length === 0) {
       return []
     }
@@ -207,7 +206,7 @@ export function createVulnerabilityProcessor(
       }
     }
 
-    const advisories: Bun.Security.Advisory[] = []
+    const advisories: SecurityAdvisory[] = []
     const processedPairs = new Set<string>() // Track processed vuln+package pairs
     ignoredCount = 0
 

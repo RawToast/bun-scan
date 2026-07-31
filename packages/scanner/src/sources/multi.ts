@@ -1,9 +1,9 @@
-import type { VulnerabilitySource } from "@repo/core"
+import type { SecurityAdvisory, VulnerabilitySource } from "@repo/core"
 import { logger } from "@repo/core"
 
 /** Multi-source scanner interface */
 export interface MultiSourceScanner {
-  scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]>
+  scan(packages: Bun.Security.Package[]): Promise<SecurityAdvisory[]>
 }
 
 /** Options for multi-source scanner */
@@ -29,10 +29,7 @@ export function createMultiSourceScanner(
   /**
    * Compare severity levels - returns true if a is higher severity than b
    */
-  function isHigherSeverity(
-    a: Bun.Security.Advisory["level"],
-    b: Bun.Security.Advisory["level"],
-  ): boolean {
+  function isHigherSeverity(a: SecurityAdvisory["level"], b: SecurityAdvisory["level"]): boolean {
     const priority: Record<string, number> = { fatal: 2, warn: 1 }
     return (priority[a] ?? 0) > (priority[b] ?? 0)
   }
@@ -41,12 +38,12 @@ export function createMultiSourceScanner(
    * Deduplicate advisories by package + any overlapping id/alias
    * When duplicates exist, keep the one with highest severity (fatal > warn)
    */
-  function deduplicateAdvisories(advisories: Bun.Security.Advisory[]): Bun.Security.Advisory[] {
+  function deduplicateAdvisories(advisories: SecurityAdvisory[]): SecurityAdvisory[] {
     // Map from key -> advisory, where key is "package:id" for any id/alias
-    const map = new Map<string, Bun.Security.Advisory>()
+    const map = new Map<string, SecurityAdvisory>()
 
     for (const advisory of advisories) {
-      const currentIds = new Set([advisory.id, ...(advisory.aliases ?? [])])
+      const currentIds = new Set([advisory.id, ...advisory.aliases])
       const packageKey = advisory.package
 
       // Find if any existing entry shares an id/alias with this advisory
@@ -72,7 +69,7 @@ export function createMultiSourceScanner(
       const winner = isHigherSeverity(advisory.level, existing.level) ? advisory : existing
 
       // Merge all IDs from both advisories and update all keys to point to winner
-      const existingIds = new Set([existing.id, ...(existing.aliases ?? [])])
+      const existingIds = new Set([existing.id, ...existing.aliases])
       const mergedIds = new Set([...currentIds, ...existingIds])
 
       for (const id of mergedIds) {
@@ -84,7 +81,7 @@ export function createMultiSourceScanner(
     return Array.from(new Set(map.values()))
   }
 
-  async function scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]> {
+  async function scan(packages: Bun.Security.Package[]): Promise<SecurityAdvisory[]> {
     const sourceNames = sources.map((s) => s.name).join(", ")
     logger.info(`Scanning with sources: ${sourceNames}`)
 
@@ -96,7 +93,7 @@ export function createMultiSourceScanner(
     )
 
     // Collect all advisories and track failures
-    const allAdvisories: Bun.Security.Advisory[] = []
+    const allAdvisories: SecurityAdvisory[] = []
     const failures: Array<{ name: string; error: string }> = []
 
     for (const [i, result] of results.entries()) {

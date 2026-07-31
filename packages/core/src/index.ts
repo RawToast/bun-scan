@@ -1,5 +1,5 @@
 // Types
-export type { FatalSeverity, SourceType, VulnerabilitySource } from "./types.js"
+export type { FatalSeverity, SecurityAdvisory, SourceType, VulnerabilitySource } from "./types.js"
 export { DEFAULT_SOURCE } from "./types.js"
 
 // Constants
