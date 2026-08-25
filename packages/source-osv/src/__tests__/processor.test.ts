@@ -237,8 +237,8 @@ describe("Vulnerability Processor", () => {
       const result = processor.processVulnerabilities(vulns, packages)
 
       expect(result.length).toBe(2)
-      expect(result.find((r: Bun.Security.Advisory) => r.package === "lodash")).toBeDefined()
-      expect(result.find((r: Bun.Security.Advisory) => r.package === "axios")).toBeDefined()
+      expect(result.find((r) => r.package === "lodash")).toBeDefined()
+      expect(result.find((r) => r.package === "axios")).toBeDefined()
     })
   })
 

@@ -170,7 +170,7 @@ Runs sequentially: `bun format` -> `bun lint:check` -> `bun compile`
 
 - **zod**: Runtime schema validation
 - **oxfmt/oxlint**: Formatting and linting (no semicolons)
-- **tsgo**: TypeScript compilation (native preview)
+- **typescript**: TypeScript compilation (native preview)
 
 ## Bun APIs
 

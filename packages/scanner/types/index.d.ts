@@ -8,6 +8,17 @@ import type { z } from "zod"
 /** Severity levels that cause fatal exit (block install) */
 export type FatalSeverity = "CRITICAL" | "HIGH"
 
+/**
+ * Extended advisory returned by bun-scan sources.
+ * Bun's Security.Advisory only requires level/package/url/description;
+ * we also carry id, message, and aliases for deduplication and logging.
+ */
+export type SecurityAdvisory = Bun.Security.Advisory & {
+  id: string
+  message: string
+  aliases: string[]
+}
+
 /** Supported vulnerability source identifiers */
 export type SourceType = "osv" | "npm" | "both"
 
@@ -26,7 +37,7 @@ export interface VulnerabilitySource {
    * Scan packages for vulnerabilities
    * Each source implements its own API logic internally
    */
-  scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]>
+  scan(packages: Bun.Security.Package[]): Promise<SecurityAdvisory[]>
 }
 
 // ============================================================================
@@ -248,7 +259,7 @@ export declare function createSources(
 // ============================================================================
 
 export interface MultiSourceScanner {
-  scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]>
+  scan(packages: Bun.Security.Package[]): Promise<SecurityAdvisory[]>
 }
 
 /** Options for multi-source scanner */
@@ -272,23 +283,3 @@ export declare function createMultiSourceScanner(
  * Supports OSV.dev, npm Registry, or both
  */
 export declare const scanner: Bun.Security.Scanner
-
-// ============================================================================
-// Global Augmentations (for Bun types)
-// ============================================================================
-
-declare global {
-  namespace Bun {
-    namespace semver {
-      function satisfies(version: string, range: string): boolean
-    }
-
-    namespace Security {
-      interface Advisory {
-        id: string
-        message: string
-        aliases?: string[]
-      }
-    }
-  }
-}

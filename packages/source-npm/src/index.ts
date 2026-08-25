@@ -3,7 +3,13 @@
  * Queries npm's bulk advisory endpoint for package vulnerabilities
  */
 
-import type { VulnerabilitySource, IgnoreConfig, NpmConfig, IgnorePackageRule } from "@repo/core"
+import type {
+  VulnerabilitySource,
+  IgnoreConfig,
+  NpmConfig,
+  IgnorePackageRule,
+  SecurityAdvisory,
+} from "@repo/core"
 import { logger } from "@repo/core"
 import { createNpmAuditClient } from "./client.js"
 import { createAdvisoryProcessor } from "./processor.js"
@@ -121,7 +127,7 @@ export function createNpmSource(
   return {
     name: "npm",
 
-    async scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]> {
+    async scan(packages: Bun.Security.Package[]): Promise<SecurityAdvisory[]> {
       if (packages.length === 0) return []
 
       logger.debug(`[npm] Starting scan for ${packages.length} packages`)

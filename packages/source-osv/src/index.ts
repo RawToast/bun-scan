@@ -1,4 +1,10 @@
-import type { VulnerabilitySource, IgnoreConfig, OsvConfig, IgnorePackageRule } from "@repo/core"
+import type {
+  VulnerabilitySource,
+  IgnoreConfig,
+  OsvConfig,
+  IgnorePackageRule,
+  SecurityAdvisory,
+} from "@repo/core"
 import { logger } from "@repo/core"
 import { createOSVClient } from "./client.js"
 import { createVulnerabilityProcessor } from "./processor.js"
@@ -126,7 +132,7 @@ export function createOSVSource(
   return {
     name: "osv",
 
-    async scan(packages: Bun.Security.Package[]): Promise<Bun.Security.Advisory[]> {
+    async scan(packages: Bun.Security.Package[]): Promise<SecurityAdvisory[]> {
       logger.debug(`[OSV] Starting scan for ${packages.length} packages`)
 
       const vulnerabilities = await client.queryVulnerabilities(packages)

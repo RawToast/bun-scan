@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test"
 import { resetSleep, setSleep } from "@repo/core"
+import type { SecurityAdvisory } from "@repo/core"
 import { scanner } from ".."
 
 const ENV_VAR = "BUN_SCAN_FAIL_ON_SCANNER_ERROR"
@@ -241,10 +242,10 @@ describe("Scanner", () => {
         },
       ]
 
-      const result = await scanner.scan({ packages })
+      const result = (await scanner.scan({ packages })) as SecurityAdvisory[]
 
       for (const advisory of result) {
-        // Required fields per Bun.Security.Advisory
+        // Required fields per SecurityAdvisory (extends Bun.Security.Advisory)
         expect(typeof advisory.id).toBe("string")
         expect(typeof advisory.message).toBe("string")
         expect(["fatal", "warn"]).toContain(advisory.level)
@@ -266,7 +267,7 @@ describe("Scanner", () => {
         },
       ]
 
-      const result = await scanner.scan({ packages })
+      const result = (await scanner.scan({ packages })) as SecurityAdvisory[]
 
       const ids = result.map((advisory) => advisory.id)
       const uniqueIds = [...new Set(ids)]
